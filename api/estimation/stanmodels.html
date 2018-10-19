@@ -1,0 +1,253 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Stan Models Module &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Occupancy Estimation" href="occupancy.html" />
+    <link rel="prev" title="Estimation Module" href="estimation.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ollin.estimation.stanmodels">
+<span id="stan-models-module"></span><h1>Stan Models Module<a class="headerlink" href="#module-ollin.estimation.stanmodels" title="Permalink to this headline">¶</a></h1>
+<p>Module defining estimation models using PyStan for estimation.</p>
+<p><code class="xref py py-mod docutils literal notranslate"><span class="pre">PyStan</span></code> is a python package for Bayesian inference with an efficient
+Hamiltonian Monte Carlo sampler under the hood (see pystan documentation
+<a class="reference external" href="http://pystan.readthedocs.io/en/latest/">http://pystan.readthedocs.io/en/latest/</a>). The Monte Carlo sampler can be used
+for MAP (maximum <em>a posteriori</em>) estimation, or full Bayesian inference.</p>
+<p>Models are defined in a specialized statistical programming language and
+compiled to an computationally fast and efficient sampler.</p>
+<p>This module defines a class that interfaces all models that use Stan for
+inference.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>Since compilation is necessary, the first run of a Stan Estimation model will
+seem very slow. Compiled versions are stored so a second use of the estimation
+model will not incur in such expensive overhead.</p>
+<p class="last">Compilation is hardware and python version dependant, so no pre-compiled models
+are shipped with a standard ollin installation.</p>
+</div>
+<dl class="attribute">
+<dt id="ollin.estimation.stanmodels.COMPILED_PATH">
+<code class="descclassname">ollin.estimation.stanmodels.</code><code class="descname">COMPILED_PATH</code><a class="headerlink" href="#ollin.estimation.stanmodels.COMPILED_PATH" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Path of all compiled models.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="ollin.estimation.stanmodels.StanModel">
+<em class="property">class </em><code class="descclassname">ollin.estimation.stanmodels.</code><code class="descname">StanModel</code><a class="reference internal" href="../../_modules/ollin/estimation/stanmodels.html#StanModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.stanmodels.StanModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class interface for estimation models that use PyStan.</p>
+<p>All estimation models that use PyStan must inherit from this class and
+implement <a class="reference internal" href="#ollin.estimation.stanmodels.StanModel.estimate" title="ollin.estimation.stanmodels.StanModel.estimate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">estimate()</span></code></a> and <code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data</span> <span class="pre">methods()</span></code>.</p>
+<dl class="attribute">
+<dt id="ollin.estimation.stanmodels.StanModel.name">
+<code class="descname">name</code><a class="headerlink" href="#ollin.estimation.stanmodels.StanModel.name" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Name of model.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.estimation.stanmodels.StanModel.stancode">
+<code class="descname">stancode</code><a class="headerlink" href="#ollin.estimation.stanmodels.StanModel.stancode" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – String containing the code in Stan language that defines the
+statistical model to use.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.estimation.stanmodels.StanModel.stanmodel">
+<code class="descname">stanmodel</code><a class="headerlink" href="#ollin.estimation.stanmodels.StanModel.stanmodel" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pystan.StanModel</span></code> – Compiled stanmodel object to use in inference.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.estimation.stanmodels.StanModel.compile_and_save">
+<code class="descname">compile_and_save</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/estimation/stanmodels.html#StanModel.compile_and_save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.stanmodels.StanModel.compile_and_save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile Stan code and save in compiled model directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.estimation.stanmodels.StanModel.estimate">
+<code class="descname">estimate</code><span class="sig-paren">(</span><em>detection</em>, <em>method='MAP'</em>, <em>priors=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/estimation/stanmodels.html#StanModel.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.stanmodels.StanModel.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate using detection data and stan model.</p>
+<p>Detection data is prepared using <a class="reference internal" href="#ollin.estimation.stanmodels.StanModel.prepare_data" title="ollin.estimation.stanmodels.StanModel.prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a> method
+and fed to pystan model. The model then samples from the posterior
+distribution (if method == ‘sample’) or optimizes for the parameters in
+the posterior distribution (if method == ‘MAP’).</p>
+<p>Any estimation model that inherits from this class must extend this
+method to extract the relevant information from the stanmodel output.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>detection</strong> (<a class="reference internal" href="../core/detection.html#ollin.core.detection.Detection" title="ollin.core.detection.Detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ollin.core.detection.Detection</span></code></a>) – Detection data from which to make estimate.</li>
+<li><strong>method</strong> (<em>{'MAP'</em><em>, </em><em>'sample'}</em><em>, </em><em>optional</em>) – Method for inference. If ‘MAP’, Stan will try to find the
+parameters at which likelihood of the posterior distribution is a
+maximum. If ‘sample’, Stan will run the Hamiltonian Monte Carlo
+sampler to return a large sample of the posterior distribution.
+Defaults to ‘MAP’.</li>
+<li><strong>priors</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary holding all information of priors parameters.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>result</strong> – If method = ‘MAP’ it will return a dictionary with the
+parameter values at which a maximum (local) of the posterior
+likelihood was found. If method = ‘sample’ it will a
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">pystan.StanFit4Model</span></code> object that contains all information
+of the sampling. See
+<a class="reference external" href="http://pystan.readthedocs.io/en/latest/api.html#pystan.StanModel.sampling">http://pystan.readthedocs.io/en/latest/api.html#pystan.StanModel.sampling</a>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict or <code class="xref py py-obj docutils literal notranslate"><span class="pre">pystan.StanFit4Model</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.estimation.stanmodels.StanModel.load_model">
+<code class="descname">load_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/estimation/stanmodels.html#StanModel.load_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.stanmodels.StanModel.load_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load and return compiled model.</p>
+<p>If no compiled version is found it will compile the model and save it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.estimation.stanmodels.StanModel.prepare_data">
+<code class="descname">prepare_data</code><span class="sig-paren">(</span><em>detection</em>, <em>priors</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/estimation/stanmodels.html#StanModel.prepare_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.stanmodels.StanModel.prepare_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare the data to feed to the Stan model.</p>
+<p>See the <code class="xref py py-meth docutils literal notranslate"><span class="pre">pystan.StanModel.sampling()</span></code> documentation for further
+information
+(<a class="reference external" href="http://pystan.readthedocs.io/en/latest/api.html#pystan.StanModel">http://pystan.readthedocs.io/en/latest/api.html#pystan.StanModel</a>).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>detection</strong> (<a class="reference internal" href="../core/detection.html#ollin.core.detection.Detection" title="ollin.core.detection.Detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Detection</span></code></a>) – Detection data.</li>
+<li><strong>priors</strong> (<em>dict</em>) – Any priors parameters information should be stored here.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>data</strong> – All inputs for variables defined in the Stan model must be
+contained in this dictionary.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core/core.html">Core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_models/movement models.html">Movement Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_analyzers/movement_analyzers.html">Movement Analyzers</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="main.html">Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../calibration/calibration.html">Calibration</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+  <li><a href="main.html">Estimation</a><ul>
+      <li>Previous: <a href="estimation.html" title="previous chapter">Estimation Module</a></li>
+      <li>Next: <a href="occupancy.html" title="next chapter">Occupancy Estimation</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../../_sources/api/estimation/stanmodels.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

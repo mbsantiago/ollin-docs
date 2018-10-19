@@ -1,0 +1,196 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Estimation Module &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Stan Models Module" href="stanmodels.html" />
+    <link rel="prev" title="Estimation" href="main.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ollin.estimation.estimation">
+<span id="estimation-module"></span><h1>Estimation Module<a class="headerlink" href="#module-ollin.estimation.estimation" title="Permalink to this headline">¶</a></h1>
+<p>Module defining basic estimation interface and library tools.</p>
+<p>Passive detector data can be used to estimate ecological state variables. This
+module holds libraries of models used for estimation of these state variables.</p>
+<p>Currently only occupancy estimation models are available, but we expect to add
+more state variables in the near future.</p>
+<p class="rubric">Notes</p>
+<p>All estimation models must inherit from <a class="reference internal" href="#ollin.estimation.estimation.EstimationModel" title="ollin.estimation.estimation.EstimationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">EstimationModel</span></code></a> metaclass.
+Hence any estimation model must implement its
+<a class="reference internal" href="#ollin.estimation.estimation.EstimationModel.estimate" title="ollin.estimation.estimation.EstimationModel.estimate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">EstimationModel.estimate()</span></code></a> method. Estimation models must return an
+<a class="reference internal" href="#ollin.estimation.estimation.Estimate" title="ollin.estimation.estimation.Estimate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Estimate</span></code></a> object. Estimate objects should specialize to whatever is
+being estimated, see
+<a class="reference internal" href="occupancy.html#ollin.estimation.occupancy.base.OccupancyEstimate" title="ollin.estimation.occupancy.base.OccupancyEstimate"><code class="xref py py-class docutils literal notranslate"><span class="pre">OccupancyEstimate</span></code></a> for an example.</p>
+<p>New estimation models must be placed within their corresponding directories.
+For example, any new occupancy estimation model should be placed in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ollin</span><span class="o">/</span><span class="n">estimation</span><span class="o">/</span><span class="n">occupancy</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>Libraries of estimation models for other state variables can also be built
+following the same structure, say:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ollin</span><span class="o">/</span><span class="n">estimation</span><span class="o">/</span><span class="n">abundance</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>could contain abundance estimation models.</p>
+<p>Every estimation model must be contained in a new file, in its corresponding
+directory, so that <code class="xref py py-func docutils literal notranslate"><span class="pre">get_estimation_model()</span></code> and
+<code class="xref py py-func docutils literal notranslate"><span class="pre">get_estimation_model_list()</span></code> tools function correctly. These tools will
+look for files in these directories automatically and no further integration is
+needed.</p>
+<dl class="class">
+<dt id="ollin.estimation.estimation.Estimate">
+<em class="property">class </em><code class="descclassname">ollin.estimation.estimation.</code><code class="descname">Estimate</code><span class="sig-paren">(</span><em>model</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/estimation/estimation.html#Estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.estimation.Estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic estimate class.</p>
+<p>Any estimate result must hold, apart from the estimate, the original data
+and the estimation model used.</p>
+<p>This class is meant to serve as an interface for specialized estimates of
+different state variables. Occupancy, abundance and other state variables
+must have specialized Estimate classes.</p>
+<dl class="attribute">
+<dt id="ollin.estimation.estimation.Estimate.model">
+<code class="descname">model</code><a class="headerlink" href="#ollin.estimation.estimation.Estimate.model" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="#ollin.estimation.estimation.EstimationModel" title="ollin.estimation.estimation.EstimationModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EstimationModel</span></code></a> – Model used for estimation.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.estimation.estimation.Estimate.data">
+<code class="descname">data</code><a class="headerlink" href="#ollin.estimation.estimation.Estimate.data" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="../core/detection.html#ollin.core.detection.Detection" title="ollin.core.detection.Detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Detection</span></code></a> – Detection data used for estimation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ollin.estimation.estimation.EstimationModel">
+<em class="property">class </em><code class="descclassname">ollin.estimation.estimation.</code><code class="descname">EstimationModel</code><a class="reference internal" href="../../_modules/ollin/estimation/estimation.html#EstimationModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.estimation.EstimationModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic estimation model class.</p>
+<p>Any estimation model must subclass this class and define an estimate
+method.</p>
+<dl class="attribute">
+<dt id="ollin.estimation.estimation.EstimationModel.name">
+<code class="descname">name</code><a class="headerlink" href="#ollin.estimation.estimation.EstimationModel.name" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Name of estimation model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.estimation.estimation.EstimationModel.estimate">
+<code class="descname">estimate</code><span class="sig-paren">(</span><em>detection</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/estimation/estimation.html#EstimationModel.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.estimation.EstimationModel.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make estimate using detection data.</p>
+<p>Abstract method that must be overwritten by any estimation model. Its
+argument must be a <a class="reference internal" href="../core/detection.html#ollin.core.detection.Detection" title="ollin.core.detection.Detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Detection</span></code></a> object, and
+it must return a <a class="reference internal" href="#ollin.estimation.estimation.Estimate" title="ollin.estimation.estimation.Estimate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Estimate</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core/core.html">Core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_models/movement models.html">Movement Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_analyzers/movement_analyzers.html">Movement Analyzers</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="main.html">Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../calibration/calibration.html">Calibration</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+  <li><a href="main.html">Estimation</a><ul>
+      <li>Previous: <a href="main.html" title="previous chapter">Estimation</a></li>
+      <li>Next: <a href="stanmodels.html" title="next chapter">Stan Models Module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../../_sources/api/estimation/estimation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

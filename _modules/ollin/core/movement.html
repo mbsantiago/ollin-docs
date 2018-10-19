@@ -1,0 +1,704 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ollin.core.movement &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ollin.core.movement</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module defining Movement Data class and Movement Analyzer</span>
+
+<span class="sd">Either simulated data or data incoming from real telemetry data can be stored</span>
+<span class="sd">in a :py:class:`MovementData` object. The main information held in such an</span>
+<span class="sd">object is the full history of individual positions arranged in an array of</span>
+<span class="sd">shape [num_individuals, time_steps, 2]. This information can then be</span>
+<span class="sd">plotted for trajectory visualization, or used in further processing.</span>
+
+<span class="sd">Data produced by simulation can be stored in a specialized type of MovementData</span>
+<span class="sd">which also holds movement model information. See :py:class:`Movement`.</span>
+
+<span class="sd">Movement analysis, such as distribution of velocities, heading angles and</span>
+<span class="sd">turning angles can be extracted and stored in an :py:class:`MovementAnalysis`</span>
+<span class="sd">object.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">.constants</span> <span class="k">import</span> <span class="n">GLOBAL_CONSTANTS</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="p">(</span><span class="n">occupancy_to_density</span><span class="p">,</span>
+                    <span class="n">home_range_to_velocity</span><span class="p">,</span>
+                    <span class="n">velocity_modification</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..movement_models.base</span> <span class="k">import</span> <span class="n">MovementModel</span>
+<span class="kn">from</span> <span class="nn">..movement_models</span> <span class="k">import</span> <span class="n">get_movement_model</span>
+<span class="kn">from</span> <span class="nn">..movement_analyzers</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">get_movement_analyzer</span><span class="p">,</span>
+    <span class="n">get_movement_analyzer_list</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="MovementData"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.MovementData">[docs]</a><span class="k">class</span> <span class="nc">MovementData</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Container for Movement data.</span>
+
+<span class="sd">    All animal movement data can be stored in an array of shape of shape</span>
+<span class="sd">    [num_individuals, time_steps, 2] which represents the positions of every</span>
+<span class="sd">    individual along some time interval. If::</span>
+
+<span class="sd">        x = array[i, j, 0]</span>
+<span class="sd">        y = array[i, j, 1]</span>
+
+<span class="sd">    then the i-th individual was at the place with (x, y)-coordinates at the</span>
+<span class="sd">    j-th time step.</span>
+
+<span class="sd">    Apart from spatial information, times at which the time steps where taken</span>
+<span class="sd">    are stored in another array of shape [time_steps].</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    site : :py:obj:`.Site`</span>
+<span class="sd">        Information of Site at which movement took place.</span>
+<span class="sd">    movement_data : array</span>
+<span class="sd">        Array of shape [num_individuals, time_steps, 2] holding coordinate</span>
+<span class="sd">        information of individual location through movement.</span>
+<span class="sd">    times : array</span>
+<span class="sd">        Array of shape [time_steps] with time at which the time steps took</span>
+<span class="sd">        place. Units are in days.</span>
+<span class="sd">    home_range : float or None</span>
+<span class="sd">        Home range value of species. Only necessary for occupancy calculation.</span>
+<span class="sd">        See :py:class:`.Occupancy`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">movement_data</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">home_range</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct Movement Data object.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        site : :py:obj:`.Site`</span>
+<span class="sd">            Information of Site at which movement took place.</span>
+<span class="sd">        movement_data : array</span>
+<span class="sd">            Array of shape [num_individuals, time_steps, 2] holding coordinate</span>
+<span class="sd">            information of individual location through movement.</span>
+<span class="sd">        times : array</span>
+<span class="sd">            Array of shape [time_steps] with time at which the time steps took</span>
+<span class="sd">            place. Units are in days.</span>
+<span class="sd">        home_range : float, optional</span>
+<span class="sd">            Home range value of species. Only necessary for occupancy</span>
+<span class="sd">            calculation. See :py:class:`.Occupancy`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">movement_data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">times</span> <span class="o">=</span> <span class="n">times</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">home_range</span> <span class="o">=</span> <span class="n">home_range</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">movement_data</span><span class="o">.</span><span class="n">shape</span>
+
+<div class="viewcode-block" id="MovementData.num_slice"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.MovementData.num_slice">[docs]</a>    <span class="k">def</span> <span class="nf">num_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract motion from slice of individuals.</span>
+
+<span class="sd">        Select a subset of individuals from motion data using a</span>
+<span class="sd">        slice.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">            key : int or list or tuple or slice</span>
+<span class="sd">                If key is an integer the result will be a</span>
+<span class="sd">                :py:obj:`MovementData` object holding only motion data for the</span>
+<span class="sd">                corresponding individual. If key is a list or tuple, its</span>
+<span class="sd">                contents will be passed to the :py:func:`slice` function, and</span>
+<span class="sd">                said slice will be extracted from data array in the first axis,</span>
+<span class="sd">                and returned in an :py:obj:`MovementData` object.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            newcopy : :py:obj:`MovementData`</span>
+<span class="sd">                New :py:obj:`MovementData` object sharing site and times</span>
+<span class="sd">                attributes but with movement data corresponding to individuals</span>
+<span class="sd">                slice.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        To extract the movement of the first ten individuals::</span>
+
+<span class="sd">            first_ten = movement.num_slice((None, 10, None))</span>
+
+<span class="sd">        To extract the movement of the last 20 individuals::</span>
+
+<span class="sd">            last_20 = movement.num_slice((-20, None, None))</span>
+
+<span class="sd">        To extract all even individuals::</span>
+
+<span class="sd">            even = movement.num_slice((None, None, 2))</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="o">*</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Num slice only accepts (int/list/tuple/slice) as&#39;</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">&#39; arguments. </span><span class="si">{}</span><span class="s1"> given.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+
+        <span class="n">newcopy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">newcopy</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">newcopy</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="n">newcopy</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">return</span> <span class="n">newcopy</span></div>
+
+<div class="viewcode-block" id="MovementData.sample"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.MovementData.sample">[docs]</a>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract a sample of individual movement.</span>
+
+<span class="sd">        Select a random sample of individuals of a given size to form a new</span>
+<span class="sd">        :py:obj:`MovementData` object.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        num : int</span>
+<span class="sd">            Size of sample</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        newcopy : :py:obj:`MovementData`</span>
+<span class="sd">            Movement data corresponding to sample.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">),</span>
+            <span class="n">size</span><span class="o">=</span><span class="n">num</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">selection</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="n">newcopy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">newcopy</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">newcopy</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="n">newcopy</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">return</span> <span class="n">newcopy</span></div>
+
+<div class="viewcode-block" id="MovementData.select"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.MovementData.select">[docs]</a>    <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Select a subset of individual movement.</span>
+
+<span class="sd">        Use an array of indices to select a subset of individuals and return</span>
+<span class="sd">        movement data of the corresponding individuals.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        selection : array or tuple or list</span>
+<span class="sd">            List of indices of selected individuals</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        newcopy : :py:obj:`MovementData`</span>
+<span class="sd">            Movement data of selected individuals.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="n">selection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">selection</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">selection</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="n">newcopy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">newcopy</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">newcopy</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="n">newcopy</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">return</span> <span class="n">newcopy</span></div>
+
+<div class="viewcode-block" id="MovementData.time_slice"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.MovementData.time_slice">[docs]</a>    <span class="k">def</span> <span class="nf">time_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Select a slice of timesteps from movement.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        key : int or list or tuple or slice</span>
+<span class="sd">            If key is integer the resulting :py:obj:`MovementData` object will</span>
+<span class="sd">            only hold the individuals position at the corresponding timestep.</span>
+<span class="sd">            If key is list or tuple, its contents will be passed to the</span>
+<span class="sd">            :py:func:slice function and the slice will be used to extract some</span>
+<span class="sd">            times steps from the movement data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        newcopy : :py:obj:`MovementData`</span>
+<span class="sd">            Movement data with selected time steps.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        To select the first 10 days of movement::</span>
+
+<span class="sd">            first_10_days = movement_data.time_slice((None, 10, None))</span>
+
+<span class="sd">        To select the last 20 days of movement::</span>
+
+<span class="sd">            last_20_days = movement_data.time_slice((-20, None, None))</span>
+
+<span class="sd">        To select every other step::</span>
+
+<span class="sd">            every_other = movement_data.time_slice((None, None, 2))</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="o">*</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Time slice only accepts (int/list/tuple/slice) as&#39;</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">&#39; arguments. </span><span class="si">{}</span><span class="s1"> given.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">key</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">newcopy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">newcopy</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">newcopy</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="n">newcopy</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">return</span> <span class="n">newcopy</span></div>
+
+<div class="viewcode-block" id="MovementData.plot"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.MovementData.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+            <span class="n">include</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">num</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+            <span class="n">mov_cmap</span><span class="o">=</span><span class="s1">&#39;Greens&#39;</span><span class="p">,</span>
+            <span class="n">simplify</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot trajectories from Movement data.</span>
+
+<span class="sd">        Movement Data plotting adds the following optional components to the</span>
+<span class="sd">        plot:</span>
+
+<span class="sd">        1. &quot;trajectories&quot;:</span>
+<span class="sd">           If present in include list, some trajectories will be plotted as a</span>
+<span class="sd">           broken line. Trajectory simplification is possible through the</span>
+<span class="sd">           simplify keyword argument. Several trajectories will be plotted.</span>
+<span class="sd">           Color of line will be chosen at random from some colormap.</span>
+
+<span class="sd">        All other components in the include list will be passed down to the</span>
+<span class="sd">        Site plotting method. See :py:meth:`.Site.plot` for all plot</span>
+<span class="sd">        components defined at that level.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`, optional</span>
+<span class="sd">            Axes object in which to plot movement trajectories.</span>
+<span class="sd">        figsize : list or tuple, optional</span>
+<span class="sd">            Size of figure to create if no axes object was given. Defaults to</span>
+<span class="sd">            (10, 10).</span>
+<span class="sd">        include : list or tuple, optional</span>
+<span class="sd">            List of components to add to the plot. Components list will be</span>
+<span class="sd">            passed to the Site object to add the corresponding components.</span>
+<span class="sd">        num : int, optional</span>
+<span class="sd">            Number of trajectories to plot. Defaults to 10.</span>
+<span class="sd">        steps : int, optional</span>
+<span class="sd">            Number of time steps to plot in trajectories. Defaults to all.</span>
+<span class="sd">        mov_cmap : str, optional</span>
+<span class="sd">            Name of colormap to choose trajectories colors from. See</span>
+<span class="sd">            :py:mod:`matplotlib.cm` to see all options. Defaults to &#39;Greens&#39;.</span>
+<span class="sd">        simplify : int, optional</span>
+<span class="sd">            Trajectories will be forced to consist of this number of points, so</span>
+<span class="sd">            if given, some time steps might be skipped.</span>
+<span class="sd">        kwargs : dict, optional</span>
+<span class="sd">            All other keyword arguments will be passed to the Site&#39;s plotting</span>
+<span class="sd">            method.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`</span>
+<span class="sd">            Return axes for further plotting.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>  <span class="c1"># pylint: disable=import-error</span>
+        <span class="kn">from</span> <span class="nn">cycler</span> <span class="k">import</span> <span class="n">cycler</span>
+
+        <span class="k">if</span> <span class="n">include</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">include</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s1">&#39;niche&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;niche_boundary&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;rectangle&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;trajectories&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">site</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="n">include</span><span class="o">=</span><span class="n">include</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;trajectories&#39;</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
+            <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">mov_cmap</span><span class="p">)</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmap</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">.</span><span class="mi">8</span><span class="p">,</span> <span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_prop_cycle</span><span class="p">(</span><span class="n">cycler</span><span class="p">(</span><span class="s1">&#39;color&#39;</span><span class="p">,</span> <span class="n">colors</span><span class="p">))</span>
+
+            <span class="n">steps</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">simplify</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">stride</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stride</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">steps</span> <span class="o">/</span> <span class="n">simplify</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">trajectories</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:</span><span class="n">num</span><span class="p">,</span> <span class="p">:</span><span class="n">steps</span><span class="p">:</span><span class="n">stride</span><span class="p">,</span> <span class="p">:]</span>
+
+            <span class="k">for</span> <span class="n">trajectory</span> <span class="ow">in</span> <span class="n">trajectories</span><span class="p">:</span>
+                <span class="n">xcoord</span><span class="p">,</span> <span class="n">ycoord</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">trajectory</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xcoord</span><span class="p">,</span> <span class="n">ycoord</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="MovementData.analyze"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.MovementData.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">analyzer</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Analyze movement with given analyzer.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        analyzer : :py:obj:`str` or :py:class:`.MovementAnalyzer`</span>
+<span class="sd">            Name of analyzer or movement analyzer class to analyze with.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        analyzer : :py:obj:`.MovementAnalyzer`</span>
+<span class="sd">            Analyzer instance with analysis results.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        NotImplementedError:</span>
+<span class="sd">            When analyzer name was not found in the library.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">analyzer</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">analyzer</span> <span class="o">=</span> <span class="n">get_movement_analyzer</span><span class="p">(</span><span class="n">analyzer</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">NotImplementedError</span><span class="p">:</span>
+                <span class="n">options</span> <span class="o">=</span> <span class="n">get_movement_analyzer_list</span><span class="p">()</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Analyzer </span><span class="si">{}</span><span class="s1"> not implemented. Please select&#39;</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">&#39; a valid option: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">analyzer</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">analysis</span> <span class="o">=</span> <span class="n">analyzer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">analysis</span></div></div>
+
+
+<div class="viewcode-block" id="Movement"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.Movement">[docs]</a><span class="k">class</span> <span class="nc">Movement</span><span class="p">(</span><span class="n">MovementData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class for simulated movement data.</span>
+
+<span class="sd">    Extension of :py:class:`MovementData` class. When movement data arises from</span>
+<span class="sd">    simulation, the applied movement model is also stored within the object.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    site : :py:obj:`.Site`</span>
+<span class="sd">        Information of Site at which movement took place.</span>
+<span class="sd">    movement_data : array</span>
+<span class="sd">        Array of shape [num_individuals, time_steps, 2] holding coordinate</span>
+<span class="sd">        information of individual location through movement.</span>
+<span class="sd">    times : array</span>
+<span class="sd">        Array of shape [time_steps] with time at which the time steps took</span>
+<span class="sd">        place. Units are in days.</span>
+<span class="sd">    home_range : float or None</span>
+<span class="sd">        Home range value of species. Only necessary for occupancy calculation.</span>
+<span class="sd">        See :py:class:`.Occupancy`.</span>
+<span class="sd">    movement_model : :py:obj:`.MovementModel`</span>
+<span class="sd">        Movement model used to generate movement.</span>
+<span class="sd">    velocity : float</span>
+<span class="sd">        Mean velocity (in Km/Day) used to movement simulation.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">site</span><span class="p">,</span>
+            <span class="n">movement_data</span><span class="p">,</span>
+            <span class="n">movement_model</span><span class="p">,</span>
+            <span class="n">velocity</span><span class="p">,</span>
+            <span class="n">home_range</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create Movement object for simulated movement.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        site : :py:obj:`.Site`</span>
+<span class="sd">            Site in which movement took place.</span>
+<span class="sd">        movement_data : array</span>
+<span class="sd">            Array of shape [num_individuals, time_steps, 2] holding coordinate</span>
+<span class="sd">            information of all individuals along all simulated time steps.</span>
+<span class="sd">        movement_model : :py:obj:`.MovementModel`</span>
+<span class="sd">            Movement model used to generate movement_data.</span>
+<span class="sd">        velocity : float</span>
+<span class="sd">            Mean velocity (in Km/Day) used in the simulation.</span>
+<span class="sd">        home_range : float, optional</span>
+<span class="sd">            Home range of simulated species. Used mainly for occupancy</span>
+<span class="sd">            calculation, or home range calibration. See</span>
+<span class="sd">            :py:class:`.Occupancy`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span> <span class="o">=</span> <span class="n">movement_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="n">velocity</span>
+
+        <span class="n">steps</span> <span class="o">=</span> <span class="n">movement_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">steps_per_day</span> <span class="o">=</span> <span class="n">movement_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;steps_per_day&#39;</span><span class="p">]</span>
+        <span class="n">days</span> <span class="o">=</span> <span class="n">steps</span> <span class="o">/</span> <span class="n">steps_per_day</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">days</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Movement</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">site</span><span class="p">,</span> <span class="n">movement_data</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">home_range</span><span class="o">=</span><span class="n">home_range</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Movement.simulate"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.Movement.simulate">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span>
+            <span class="n">site</span><span class="p">,</span>
+            <span class="n">days</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">occupancy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">home_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">velocity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">movement_model</span><span class="o">=</span><span class="s1">&#39;variable_levy&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make simulated movement data.</span>
+
+<span class="sd">        Use some movement model from the model library to generate simulated</span>
+<span class="sd">        movement data for some virtual species with a fixed velocity (in</span>
+<span class="sd">        Km/Day).</span>
+
+<span class="sd">        Number of individuals and mean velocity must be specified, but it is</span>
+<span class="sd">        also possible to use home range and/or occupancy as proxies for density</span>
+<span class="sd">        and mean velocity, respectively. The faithfulness of these proxies</span>
+<span class="sd">        depend on the correct calibration of the parameters associated to the</span>
+<span class="sd">        movement model.</span>
+
+<span class="sd">        If using a movement model from the library, these should be</span>
+<span class="sd">        pre-calibrated, and hence home range (or occupancy) can be used to</span>
+<span class="sd">        estimate mean velocity (or density) with some degree of accuracy.</span>
+
+<span class="sd">        Otherwise the user must first be sure that the model is calibrated.</span>
+<span class="sd">        See :py:mod:`.calibration`.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        site : :py:obj:`.Site`</span>
+<span class="sd">            Site in which simulate movement.</span>
+<span class="sd">        days : int, optional</span>
+<span class="sd">            Number of simulation days. Movement models include a steps_per_day</span>
+<span class="sd">            parameter, so number of simulated time steps is days *</span>
+<span class="sd">            steps_per_day. Defaults to 365.</span>
+<span class="sd">        num : int, optional</span>
+<span class="sd">            Number of individuals to include in simulation. If not given,</span>
+<span class="sd">            occupancy argument must be provided.</span>
+<span class="sd">        occupancy : float, optional</span>
+<span class="sd">            If provided the relationship occupancy &lt;-&gt; density will be used to</span>
+<span class="sd">            estimate the number of individuals to include in simulation. See</span>
+<span class="sd">            :py:func:`.core.utils.occupancy_to_density`.</span>
+<span class="sd">        velocity : float, optional</span>
+<span class="sd">            Mean velocity in Km/Day to use in movement model. If not given,</span>
+<span class="sd">            home range argument must be provided.</span>
+<span class="sd">        home_range : float, optional</span>
+<span class="sd">            Home range of simulated species. If provided the relationship</span>
+<span class="sd">            home_range &lt;-&gt; mean velocity will be used to estimate the mean</span>
+<span class="sd">            velocity of species. See</span>
+<span class="sd">            :py:func:`.core.utils.home_range_to_velocity`.</span>
+<span class="sd">        movement_model : str or :py:obj:`.movement_models.MovementModel`</span>
+<span class="sd">            Name of movement model in library o MovementModel instance to use</span>
+<span class="sd">            to generate simulated movement.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        mov : :py:obj:`Movement`</span>
+<span class="sd">            Movement instance with simulated movement data.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If both num and occupancy, or velocity and home_range, are given</span>
+<span class="sd">            simultaneously.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">movement_model</span><span class="p">,</span> <span class="n">MovementModel</span><span class="p">):</span>
+            <span class="n">movement_model</span> <span class="o">=</span> <span class="n">get_movement_model</span><span class="p">(</span>
+                <span class="n">movement_model</span><span class="p">,</span>
+                <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">movement_model</span><span class="o">.</span><span class="n">parameters</span>
+
+        <span class="k">if</span> <span class="n">velocity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">home_range</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Arguments velocity or home_range must be provided&#39;</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">velocity</span> <span class="o">=</span> <span class="n">home_range_to_velocity</span><span class="p">(</span>
+                <span class="n">home_range</span><span class="p">,</span>
+                <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;home_range&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">num</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">occupancy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Arguments num or occupancy must be provided&#39;</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span> <span class="o">=</span> <span class="n">site</span><span class="o">.</span><span class="n">range</span>
+            <span class="k">if</span> <span class="n">home_range</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;If num is not specified home range AND occupancy&#39;</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">&#39; must be provided&#39;</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">area</span> <span class="o">=</span> <span class="n">site</span><span class="o">.</span><span class="n">range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">site</span><span class="o">.</span><span class="n">range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">home_range_proportion</span> <span class="o">=</span> <span class="n">home_range</span> <span class="o">/</span> <span class="n">area</span>
+            <span class="n">dens</span> <span class="o">=</span> <span class="n">occupancy_to_density</span><span class="p">(</span>
+                <span class="n">occupancy</span><span class="p">,</span>
+                <span class="n">home_range_proportion</span><span class="p">,</span>
+                <span class="n">site</span><span class="o">.</span><span class="n">niche_size</span><span class="p">,</span>
+                <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;density&#39;</span><span class="p">])</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rangex</span> <span class="o">*</span> <span class="n">rangey</span> <span class="o">*</span> <span class="n">dens</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">days</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">days</span> <span class="o">=</span> <span class="n">GLOBAL_CONSTANTS</span><span class="p">[</span><span class="s1">&#39;days&#39;</span><span class="p">]</span>
+
+        <span class="n">velocity_mod</span> <span class="o">=</span> <span class="n">velocity_modification</span><span class="p">(</span>
+            <span class="n">site</span><span class="o">.</span><span class="n">niche_size</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+        <span class="n">steps_per_day</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;steps_per_day&#39;</span><span class="p">]</span>
+        <span class="n">sim_velocity</span> <span class="o">=</span> <span class="n">velocity</span> <span class="o">*</span> <span class="n">velocity_mod</span> <span class="o">/</span> <span class="n">steps_per_day</span>
+
+        <span class="n">steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">days</span> <span class="o">*</span> <span class="n">steps_per_day</span><span class="p">)</span>
+
+        <span class="n">initial_positions</span> <span class="o">=</span> <span class="n">site</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+        <span class="n">movement_data</span> <span class="o">=</span> <span class="n">movement_model</span><span class="o">.</span><span class="n">generate_movement</span><span class="p">(</span>
+            <span class="n">initial_positions</span><span class="p">,</span>
+            <span class="n">site</span><span class="p">,</span>
+            <span class="n">steps</span><span class="p">,</span>
+            <span class="n">sim_velocity</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">site</span><span class="p">,</span>
+            <span class="n">movement_data</span><span class="p">,</span>
+            <span class="n">movement_model</span><span class="p">,</span>
+            <span class="n">velocity</span><span class="p">,</span>
+            <span class="n">home_range</span><span class="o">=</span><span class="n">home_range</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Movement.extend"><a class="viewcode-back" href="../../../api/core/movement.html#ollin.core.movement.Movement.extend">[docs]</a>    <span class="k">def</span> <span class="nf">extend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">days</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extend movement data with new simulated movement.</span>
+
+<span class="sd">        Use last position as starting point to generate new simulated</span>
+<span class="sd">        movement and append to existing. This method will use the same mean</span>
+<span class="sd">        velocity and movement model to generate new movement.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        days : int</span>
+<span class="sd">            Number of days of new simulated movement.</span>
+<span class="sd">        inplace : bool, optional</span>
+<span class="sd">            If true, only Movement object attributes will be changed, otherwise</span>
+<span class="sd">            a copy of the object will be made with the new movement data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        extension : :py:obj:`Movement`</span>
+<span class="sd">            Movement object with extended movement data.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">steps_per_day</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;steps_per_day&#39;</span><span class="p">]</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">steps_per_day</span> <span class="o">*</span> <span class="n">days</span><span class="p">)</span>
+
+        <span class="n">velocity_mod</span> <span class="o">=</span> <span class="n">velocity_modification</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">site</span><span class="o">.</span><span class="n">niche_size</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+        <span class="n">velocity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">*</span> <span class="n">velocity_mod</span> <span class="o">/</span> <span class="n">steps_per_day</span>
+
+        <span class="n">initial_positions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+
+        <span class="n">new_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span><span class="o">.</span><span class="n">generate_movement</span><span class="p">(</span>
+            <span class="n">initial_positions</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">site</span><span class="p">,</span>
+            <span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">velocity</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">new_data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:,</span> <span class="p">:],</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">old_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">total_days</span> <span class="o">=</span> <span class="p">(</span><span class="n">old_steps</span> <span class="o">+</span> <span class="n">steps</span><span class="p">)</span> <span class="o">/</span> <span class="n">steps_per_day</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">total_days</span><span class="p">,</span> <span class="n">old_steps</span> <span class="o">+</span> <span class="n">steps</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">inplace</span><span class="p">:</span>
+            <span class="n">extension</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">extension</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="n">extension</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">extension</span><span class="o">.</span><span class="n">times</span> <span class="o">=</span> <span class="n">times</span>
+        <span class="k">return</span> <span class="n">extension</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

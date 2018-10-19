@@ -1,0 +1,235 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ollin.movement_analyzers.bearing &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ollin.movement_analyzers.bearing</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">.base</span> <span class="k">import</span> <span class="n">MovementAnalyzer</span>
+
+
+<div class="viewcode-block" id="Analyzer"><a class="viewcode-back" href="../../../libraries/movement_analyzers/bearing.html#ollin.movement_analyzers.bearing.Analyzer">[docs]</a><span class="k">class</span> <span class="nc">Analyzer</span><span class="p">(</span><span class="n">MovementAnalyzer</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Bearing analyzer.</span>
+
+<span class="sd">    Bearing refers to the angle formed by the movement of an individual with</span>
+<span class="sd">    respect to a reference direction. In this case the reference direction is</span>
+<span class="sd">    east.</span>
+
+<span class="sd">    Hence if :math:`p(t_0) = (x_0, y_0)` and :math:`p(t_1) = (x_1, y_1)` is the</span>
+<span class="sd">    position of an individual at times :math:`t_0` and :math:`t_1` then the</span>
+<span class="sd">    bearing at time :math:`t_0` is defined by:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        b = \arctan\left(\frac{y_1 - y_0}{x_0 - x_1}\right)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Bearing&#39;</span>
+
+<div class="viewcode-block" id="Analyzer.analyze"><a class="viewcode-back" href="../../../libraries/movement_analyzers/bearing.html#ollin.movement_analyzers.bearing.Analyzer.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">movement</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract bearings from movement data.</span>
+
+<span class="sd">        Get the bearings of all individuals in movement data at every time</span>
+<span class="sd">        step. Will result in an array of size [num_individuals, time_steps - 1]</span>
+<span class="sd">        so that::</span>
+
+<span class="sd">            bearing = results[i, k]</span>
+
+<span class="sd">        Means that the ``i``-th individual had a bearing of ``bearing`` at the</span>
+<span class="sd">        ``k``-th time step.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        movement : :py:obj:`.Movement`</span>
+<span class="sd">            Movement data to analyze</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        results : :py:obj:`array`</span>
+<span class="sd">            Array of shape [num_individuals, time_steps - 1] containing the</span>
+<span class="sd">            bearings of all individuals at every time step.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">movement</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">movement</span><span class="o">.</span><span class="n">times</span>
+
+        <span class="n">dtimes</span> <span class="o">=</span> <span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">times</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">directions</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">data</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:])</span> <span class="o">/</span> <span class="n">dtimes</span>
+        <span class="n">complex_directions</span> <span class="o">=</span> <span class="n">directions</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">directions</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">bearings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">complex_directions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bearings</span></div>
+
+<div class="viewcode-block" id="Analyzer.plot"><a class="viewcode-back" href="../../../libraries/movement_analyzers/bearing.html#ollin.movement_analyzers.bearing.Analyzer.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+            <span class="n">num_individual</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+            <span class="n">width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Reds&#39;</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+            <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot distribution of bearing angles.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`, optional</span>
+<span class="sd">            Axes object in which to plot.</span>
+<span class="sd">        figsize : tuple or list, optional</span>
+<span class="sd">            Size of figure to create if no axes are provided.</span>
+<span class="sd">        num_individual : int or tuple or list or array, optional</span>
+<span class="sd">            Selection of individuals from which to draw bearing angle</span>
+<span class="sd">            information. If num_individual=&#39;all&#39;, all information will</span>
+<span class="sd">            be plotted.</span>
+<span class="sd">        bins : int, optional</span>
+<span class="sd">            Number of bins to use in histogram of bearing distribution.</span>
+<span class="sd">            Defaults to 20.</span>
+<span class="sd">        width : float, optional</span>
+<span class="sd">            Width of bars in histogram. If none is given, width will be</span>
+<span class="sd">            maximum possible before overlap.</span>
+<span class="sd">        cmap : str, optional</span>
+<span class="sd">            Colormap to use to assign colors to histogram bars. Defaults</span>
+<span class="sd">            to &#39;Reds&#39;.</span>
+<span class="sd">        alpha : float, optional</span>
+<span class="sd">            Alpha value of plot. Defaults to 0.8.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="kn">from</span> <span class="nn">matplotlib.cm</span> <span class="k">import</span> <span class="n">get_cmap</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+                    <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span> <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;polar&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+
+        <span class="k">if</span> <span class="n">num_individual</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+            <span class="n">bdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_individual</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">bdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">num_individual</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">num_individual</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="n">range_</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="n">histogram</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span>
+                <span class="n">bdata</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="n">range_</span><span class="p">,</span> <span class="n">normed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="p">(</span><span class="n">range_</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">range_</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">bins</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">range_</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">range_</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">bins</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">bars</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">histogram</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+        <span class="n">mins</span><span class="p">,</span> <span class="n">maxs</span> <span class="o">=</span> <span class="n">histogram</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">histogram</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+        <span class="c1"># Use custom colors and opacity</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">get_cmap</span><span class="p">(</span><span class="n">cmap</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">pbar</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">histogram</span><span class="p">,</span> <span class="n">bars</span><span class="p">):</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span>
+                    <span class="n">cmap</span><span class="p">((</span><span class="n">value</span> <span class="o">-</span> <span class="n">mins</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">0.1</span> <span class="o">+</span> <span class="n">maxs</span> <span class="o">-</span> <span class="n">mins</span><span class="p">)))</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="n">ticks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.05</span> <span class="o">+</span> <span class="n">histogram</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">ticks</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">ticks</span> <span class="o">-</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Bearing distribution&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../movement_analyzers.html">ollin.movement_analyzers</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

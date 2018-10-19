@@ -1,0 +1,191 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Calibration of Movement Models &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Calibrators" href="calibrators.html" />
+    <link rel="prev" title="Calibration" href="calibration.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ollin.calibration.calibrate">
+<span id="calibration-of-movement-models"></span><h1>Calibration of Movement Models<a class="headerlink" href="#module-ollin.calibration.calibrate" title="Permalink to this headline">¶</a></h1>
+<p>Module for Movement Model calibration.</p>
+<p>Every Movement Model is defined in terms of user controllable parameters which
+must be calibrated before use. Model calibration refers to the three following
+procedures:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><dl class="first docutils">
+<dt>Velocity calibration:</dt>
+<dd>Even though all Movement Models must implement some way of controlling
+agent mean speed, it may be impossible to precisely select the correct
+speed parameter to obtain the desired mean speed, specially for complex
+models with interactions between environment and other individuals.
+Hence a correction to the speed parameter must be calculated to amend
+such shortcomings. Mean speed is calculated in a variety of scenarios
+and a correction factor is calculated by fitting the velocity data of
+the simulated movements to desired outcome.</dd>
+</dl>
+</li>
+<li>Home Range calibration.</li>
+<li><dl class="first docutils">
+<dt>Occupancy calibration.</dt>
+<dd>A main feature of <code class="xref py py-mod docutils literal notranslate"><span class="pre">ollin</span></code> is its capacity to generate random
+scenarios with a user determined home range and occupancy values. In
+order for this to be possible, the fundamental relations between
+home range and mean velocity, and density and occupancy, must be
+understood. These relations depend on the Movement Model. Home range
+and Occupancy calibration refer to the process in which simulations
+in a variety of scenarios are run and a parametric model of response
+functions are fitted to the data to obtain an approximate functional
+relation between home range and mean velocity, and density and
+occupancy.</dd>
+</dl>
+</li>
+</ol>
+</div></blockquote>
+<dl class="function">
+<dt id="ollin.calibration.calibrate.calibrate">
+<code class="descclassname">ollin.calibration.calibrate.</code><code class="descname">calibrate</code><span class="sig-paren">(</span><em>model</em>, <em>config=None</em>, <em>save_fig=False</em>, <em>save_path=None</em>, <em>plot_style='fivethirtyeight'</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/calibrate.html#calibrate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.calibrate.calibrate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calibrate parameters of movement model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>model</strong> (<a class="reference internal" href="../movement_models/movement models.html#ollin.movement_models.base.MovementModel" title="ollin.movement_models.base.MovementModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MovementModel</span></code></a>) – Movement model instance to calibrate.</li>
+<li><strong>config</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary holding calibration configuration values. If None is
+given, default configurations will be used. See <a class="reference internal" href="config.html#module-ollin.calibration.config" title="ollin.calibration.config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">config</span></code></a></li>
+<li><strong>save_fig</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, calibration procedure will save calibration graphs.</li>
+<li><strong>save_path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path in which to save calibration figures. Must be provided if
+save_fig is True.</li>
+<li><strong>plot_style</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of pyplot style to use in calibration figures. See
+<a class="reference external" href="https://matplotlib.org/gallery/style_sheets/style_sheets_reference.html">pyplot</a> to see all available options.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><ul class="simple">
+<li><strong>calibrated_model</strong> (<a class="reference internal" href="../movement_models/movement models.html#ollin.movement_models.base.MovementModel" title="ollin.movement_models.base.MovementModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">MovementModel</span></code></a>) – Same Movement model instance with calibrated parameters.</li>
+<li><strong>calibrated_parameters</strong> (<em>dict</em>) – Dictionary holding all calibrated parameters.</li>
+</ul>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">ValueError: – If no save_path was provided while save_fig is True.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core/core.html">Core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_models/movement models.html">Movement Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_analyzers/movement_analyzers.html">Movement Analyzers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../estimation/main.html">Estimation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="calibration.html">Calibration</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+  <li><a href="calibration.html">Calibration</a><ul>
+      <li>Previous: <a href="calibration.html" title="previous chapter">Calibration</a></li>
+      <li>Next: <a href="calibrators.html" title="next chapter">Calibrators</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../../_sources/api/calibration/calibrate.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,185 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Movement Analyzers &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Estimation" href="../estimation/main.html" />
+    <link rel="prev" title="Movement Models" href="../movement_models/movement models.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ollin.movement_analyzers">
+<span id="movement-analyzers"></span><h1>Movement Analyzers<a class="headerlink" href="#module-ollin.movement_analyzers" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="ollin.movement_analyzers.get_movement_analyzer_list">
+<code class="descclassname">ollin.movement_analyzers.</code><code class="descname">get_movement_analyzer_list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/movement_analyzers.html#get_movement_analyzer_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.movement_analyzers.get_movement_analyzer_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all movement analyzers in library.</p>
+</dd></dl>
+
+<div class="section" id="module-ollin.movement_analyzers.base">
+<span id="base-class"></span><h2>Base Class<a class="headerlink" href="#module-ollin.movement_analyzers.base" title="Permalink to this headline">¶</a></h2>
+<p>Interface for all movement analyzers</p>
+<dl class="class">
+<dt id="ollin.movement_analyzers.base.MovementAnalyzer">
+<em class="property">class </em><code class="descclassname">ollin.movement_analyzers.base.</code><code class="descname">MovementAnalyzer</code><span class="sig-paren">(</span><em>movement</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/movement_analyzers/base.html#MovementAnalyzer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.movement_analyzers.base.MovementAnalyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for all movement analyzers.</p>
+<p>All movement analyzers must subclass this class and implement the analyze
+and plot methods. A name for the analyzer must also be provided.</p>
+<dl class="attribute">
+<dt id="ollin.movement_analyzers.base.MovementAnalyzer.name">
+<code class="descname">name</code><a class="headerlink" href="#ollin.movement_analyzers.base.MovementAnalyzer.name" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Name of analyzer.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.movement_analyzers.base.MovementAnalyzer.movement">
+<code class="descname">movement</code><a class="headerlink" href="#ollin.movement_analyzers.base.MovementAnalyzer.movement" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="../core/movement.html#ollin.core.movement.Movement" title="ollin.core.movement.Movement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Movement</span></code></a> – Reference to the movement data being analyzed.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.movement_analyzers.base.MovementAnalyzer.results">
+<code class="descname">results</code><a class="headerlink" href="#ollin.movement_analyzers.base.MovementAnalyzer.results" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">array</span></code> – An array holding the results of the analysis.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.movement_analyzers.base.MovementAnalyzer.analyze">
+<code class="descname">analyze</code><span class="sig-paren">(</span><em>movement</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/movement_analyzers/base.html#MovementAnalyzer.analyze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.movement_analyzers.base.MovementAnalyzer.analyze" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyze movement data.</p>
+<p>This is an abstract method that must be overwritten by any
+implementation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>movement</strong> (<a class="reference internal" href="../core/movement.html#ollin.core.movement.Movement" title="ollin.core.movement.Movement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Movement</span></code></a>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>results</strong> – Array containing the results of the analysis.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal notranslate"><span class="pre">array</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.movement_analyzers.base.MovementAnalyzer.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/movement_analyzers/base.html#MovementAnalyzer.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.movement_analyzers.base.MovementAnalyzer.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Visualize analysis results.</p>
+<p>This is an abstract method that must be overwritten by any
+implementation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<p>To see all available Movement Analyzers see <a class="reference internal" href="../../libraries/movement_analyzers.html#movement-analyzers-library"><span class="std std-ref">Movement Analyzers Library</span></a></p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core/core.html">Core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_models/movement models.html">Movement Models</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Movement Analyzers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../estimation/main.html">Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../calibration/calibration.html">Calibration</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+      <li>Previous: <a href="../movement_models/movement models.html" title="previous chapter">Movement Models</a></li>
+      <li>Next: <a href="../estimation/main.html" title="next chapter">Estimation</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../../_sources/api/movement_analyzers/movement_analyzers.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

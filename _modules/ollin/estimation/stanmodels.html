@@ -1,0 +1,277 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ollin.estimation.stanmodels &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ollin.estimation.stanmodels</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module defining estimation models using PyStan for estimation.</span>
+
+<span class="sd">:py:mod:`PyStan` is a python package for Bayesian inference with an efficient</span>
+<span class="sd">Hamiltonian Monte Carlo sampler under the hood (see pystan documentation</span>
+<span class="sd">http://pystan.readthedocs.io/en/latest/). The Monte Carlo sampler can be used</span>
+<span class="sd">for MAP (maximum *a posteriori*) estimation, or full Bayesian inference.</span>
+
+<span class="sd">Models are defined in a specialized statistical programming language and</span>
+<span class="sd">compiled to an computationally fast and efficient sampler.</span>
+
+<span class="sd">This module defines a class that interfaces all models that use Stan for</span>
+<span class="sd">inference.</span>
+
+<span class="sd">Warning</span>
+<span class="sd">-----</span>
+<span class="sd">Since compilation is necessary, the first run of a Stan Estimation model will</span>
+<span class="sd">seem very slow. Compiled versions are stored so a second use of the estimation</span>
+<span class="sd">model will not incur in such expensive overhead.</span>
+
+<span class="sd">Compilation is hardware and python version dependant, so no pre-compiled models</span>
+<span class="sd">are shipped with a standard ollin installation.</span>
+
+<span class="sd">Attributes</span>
+<span class="sd">---------</span>
+<span class="sd">COMPILED_PATH : str</span>
+<span class="sd">    Path of all compiled models.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">from</span> <span class="nn">.estimation</span> <span class="k">import</span> <span class="n">EstimationModel</span>
+
+
+<span class="n">COMPILED_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)),</span>
+    <span class="s1">&#39;compiled_models&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="StanModel"><a class="viewcode-back" href="../../../api/estimation/stanmodels.html#ollin.estimation.stanmodels.StanModel">[docs]</a><span class="k">class</span> <span class="nc">StanModel</span><span class="p">(</span><span class="n">EstimationModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class interface for estimation models that use PyStan.</span>
+
+<span class="sd">    All estimation models that use PyStan must inherit from this class and</span>
+<span class="sd">    implement :py:meth:`estimate` and :py:meth:`prepare_data methods`.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of model.</span>
+<span class="sd">    stancode : str</span>
+<span class="sd">        String containing the code in Stan language that defines the</span>
+<span class="sd">        statistical model to use.</span>
+<span class="sd">    stanmodel : :py:obj:`pystan.StanModel`</span>
+<span class="sd">        Compiled stanmodel object to use in inference.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">stancode</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a StanModel object.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stanmodel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_model</span><span class="p">()</span>
+
+<div class="viewcode-block" id="StanModel.prepare_data"><a class="viewcode-back" href="../../../api/estimation/stanmodels.html#ollin.estimation.stanmodels.StanModel.prepare_data">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">prepare_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detection</span><span class="p">,</span> <span class="n">priors</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Prepare the data to feed to the Stan model.</span>
+
+<span class="sd">        See the :py:meth:`pystan.StanModel.sampling` documentation for further</span>
+<span class="sd">        information</span>
+<span class="sd">        (http://pystan.readthedocs.io/en/latest/api.html#pystan.StanModel).</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        detection : :py:obj:`.Detection`</span>
+<span class="sd">            Detection data.</span>
+<span class="sd">        priors : dict</span>
+<span class="sd">            Any priors parameters information should be stored here.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        data : dict</span>
+<span class="sd">            All inputs for variables defined in the Stan model must be</span>
+<span class="sd">            contained in this dictionary.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="StanModel.estimate"><a class="viewcode-back" href="../../../api/estimation/stanmodels.html#ollin.estimation.stanmodels.StanModel.estimate">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detection</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;MAP&#39;</span><span class="p">,</span> <span class="n">priors</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimate using detection data and stan model.</span>
+
+<span class="sd">        Detection data is prepared using :py:meth:`prepare_data` method</span>
+<span class="sd">        and fed to pystan model. The model then samples from the posterior</span>
+<span class="sd">        distribution (if method == &#39;sample&#39;) or optimizes for the parameters in</span>
+<span class="sd">        the posterior distribution (if method == &#39;MAP&#39;).</span>
+
+<span class="sd">        Any estimation model that inherits from this class must extend this</span>
+<span class="sd">        method to extract the relevant information from the stanmodel output.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        detection : :py:obj:`ollin.core.detection.Detection`</span>
+<span class="sd">            Detection data from which to make estimate.</span>
+<span class="sd">        method : {&#39;MAP&#39;, &#39;sample&#39;}, optional</span>
+<span class="sd">            Method for inference. If &#39;MAP&#39;, Stan will try to find the</span>
+<span class="sd">            parameters at which likelihood of the posterior distribution is a</span>
+<span class="sd">            maximum. If &#39;sample&#39;, Stan will run the Hamiltonian Monte Carlo</span>
+<span class="sd">            sampler to return a large sample of the posterior distribution.</span>
+<span class="sd">            Defaults to &#39;MAP&#39;.</span>
+<span class="sd">        priors : dict, optional</span>
+<span class="sd">            Dictionary holding all information of priors parameters.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        result : dict or :py:obj:`pystan.StanFit4Model`</span>
+<span class="sd">            If method = &#39;MAP&#39; it will return a dictionary with the</span>
+<span class="sd">            parameter values at which a maximum (local) of the posterior</span>
+<span class="sd">            likelihood was found. If method = &#39;sample&#39; it will a</span>
+<span class="sd">            :py:obj:`pystan.StanFit4Model` object that contains all information</span>
+<span class="sd">            of the sampling. See</span>
+<span class="sd">            http://pystan.readthedocs.io/en/latest/api.html#pystan.StanModel.sampling.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">priors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">priors</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stanmodel</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_data</span><span class="p">(</span><span class="n">detection</span><span class="p">,</span> <span class="n">priors</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;MAP&#39;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">optimizing</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;sample&#39;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sampling</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Method must be &quot;MAP&quot; or &quot;sample&quot;.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="StanModel.load_model"><a class="viewcode-back" href="../../../api/estimation/stanmodels.html#ollin.estimation.stanmodels.StanModel.load_model">[docs]</a>    <span class="k">def</span> <span class="nf">load_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load and return compiled model.</span>
+
+<span class="sd">        If no compiled version is found it will compile the model and save it.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">COMPILED_PATH</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">COMPILED_PATH</span><span class="p">)</span>
+
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">COMPILED_PATH</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">stanfile</span><span class="p">:</span>
+                <span class="n">stan_model</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">stanfile</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stan_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compile_and_save</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">stan_model</span></div>
+
+<div class="viewcode-block" id="StanModel.compile_and_save"><a class="viewcode-back" href="../../../api/estimation/stanmodels.html#ollin.estimation.stanmodels.StanModel.compile_and_save">[docs]</a>    <span class="k">def</span> <span class="nf">compile_and_save</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compile Stan code and save in compiled model directory.&quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">pystan</span>
+
+        <span class="n">stan_model</span> <span class="o">=</span> <span class="n">pystan</span><span class="o">.</span><span class="n">StanModel</span><span class="p">(</span><span class="n">model_code</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stancode</span><span class="p">)</span>
+
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">COMPILED_PATH</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">stanfile</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">stan_model</span><span class="p">,</span> <span class="n">stanfile</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">stan_model</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../estimation.html">ollin.estimation</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

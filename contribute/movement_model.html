@@ -1,0 +1,337 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Add new Movement Models &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Add new Estimation Model" href="estimation.html" />
+    <link rel="prev" title="Contribute" href="main.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="add-new-movement-models">
+<h1>Add new Movement Models<a class="headerlink" href="#add-new-movement-models" title="Permalink to this headline">¶</a></h1>
+<p>Making a new movement model involves the following steps:</p>
+<div class="section" id="make-the-code">
+<h2>Make the code<a class="headerlink" href="#make-the-code" title="Permalink to this headline">¶</a></h2>
+<p>Make a new file with an abbreviation of the movement model’s name.</p>
+<p>Any movement model must be a new class named <code class="docutils literal notranslate"><span class="pre">Model</span></code> that inherits from
+<code class="docutils literal notranslate"><span class="pre">ollin.MovementModel</span></code>. A name for the class must be specified as an
+attribute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ollin</span> <span class="k">import</span> <span class="n">MovementModel</span>
+
+
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">MovementModel</span><span class="p">):</span>
+  <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;New Movement Model&#39;</span>
+</pre></div>
+</div>
+<p>Movement behaviour is implemented in the method <code class="docutils literal notranslate"><span class="pre">generate_movement</span></code>.
+This method must have as arguments:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>The model instance (self).</li>
+<li>An array with initial positions.</li>
+<li>A <a class="reference internal" href="../api/core/sites.html#ollin.core.sites.Site" title="ollin.core.sites.Site"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Site</span></code></a> in which motion is to take place.</li>
+<li>Number of steps to simulate.</li>
+<li>Mean velocity to try to achieve.</li>
+</ol>
+</div></blockquote>
+<p>And it must return an array of shape <code class="docutils literal notranslate"><span class="pre">[num,</span> <span class="pre">steps,</span> <span class="pre">2]</span></code> where <code class="docutils literal notranslate"><span class="pre">num</span></code> is the
+number of initial positions contained in the initial positions array.</p>
+<p>See <a class="reference internal" href="../api/movement_models/movement models.html#ollin.movement_models.base.MovementModel" title="ollin.movement_models.base.MovementModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">MovementModel</span></code></a> for full reference.</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ollin</span> <span class="k">import</span> <span class="n">MovementModel</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">MovementModel</span><span class="p">):</span>
+  <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Random Movement&#39;</span>
+
+  <span class="k">def</span> <span class="nf">generate_movement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_position</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">velocity</span><span class="p">):</span>
+    <span class="n">num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">initial_position</span><span class="p">)</span>
+    <span class="n">movement</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">([</span><span class="n">num</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">movement</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Note that velocity and site arguments are not used in this mock version of a
+movement model. This is perfectly fine and will not break any of the
+functionalities, although will probably lead to a bad movement model.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The name for the <code class="docutils literal notranslate"><span class="pre">velocity</span></code> argument might suggest that movement generated by
+the model must have mean velocity equal to <code class="docutils literal notranslate"><span class="pre">velocity</span></code>. Although this would
+be desirable, it might not be possible, and so models have to go through a
+calibration phase so that desired mean velocity is obtained. See
+<a class="reference internal" href="../tutorials/calibration.html#velocity-calibration"><span class="std std-ref">Velocity Calibration</span></a>.</p>
+</div>
+<p>If the movement model you wish to write depends on some parameters, please
+specify default parameters at the class definition inside the <code class="docutils literal notranslate"><span class="pre">default_parameters</span></code>
+dictionary, inside the <code class="docutils literal notranslate"><span class="pre">movement</span></code> key. This parameters can be overwritten at
+instantiation, and are be available at <code class="docutils literal notranslate"><span class="pre">self.parameters</span></code>. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">MovementModel</span><span class="p">):</span>
+  <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Random Movement&#39;</span>
+  <span class="n">default_parameters</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;movement&#39;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">0.4</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">generate_movement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_position</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">velocity</span><span class="p">):</span>
+    <span class="n">movement_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;movement&#39;</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">movement_parameters</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span>
+
+    <span class="n">num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">initial_position</span><span class="p">)</span>
+    <span class="n">movement</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="n">num</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">movement</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="efficiency-considerations">
+<h2>Efficiency Considerations<a class="headerlink" href="#efficiency-considerations" title="Permalink to this headline">¶</a></h2>
+<p>Movement simulation is generally a computationally expensive operation. Hence
+a careful though on its implementation is often necessary. Bare Python functions
+have large overhead due to the nature of the language, but there are many paths
+to greater efficiency:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">numpy:</th><td class="field-body">The fundamental numerical python package. Numpy routines handle large
+amounts of operations with optimized code, reducing the computing time
+in considerable amounts. Numpy arrays and operations are used through
+Ollin and are heavily recommended for any Movement Model
+implementation. Check this <a class="reference external" href="https://docs.scipy.org/doc/numpy-1.15.1/user/quickstart.html">guide</a> to get started with Numpy.</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">numba:</th><td class="field-body">This wonderful library allows to make optimized compiled versions of
+python functions while still having a simple interface and relative
+ease-of-use. Many Numpy operations are compatible with Numba
+compilation, but it does not support arbitrary functions. Check <a class="reference external" href="http://numba.pydata.org/numba-doc/latest/user/5minguide.html">numba</a>
+documentation on how to convert your functions into a optimized version
+and to consult valid operations.</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">cython:</th><td class="field-body"><a class="reference external" href="https://cython.readthedocs.io/en/latest/src/tutorial/cython_tutorial.html">Cython</a> is a superset of Python language that compiles to optimized C
+code that can be called from Python.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="calibration">
+<h2>Calibration<a class="headerlink" href="#calibration" title="Permalink to this headline">¶</a></h2>
+<p>In order to generate motion with the desired mean speed, or to generate
+scenarios with a given home range or occupancy, the model must be calibrated
+before use. For more details on calibration see <a class="reference internal" href="../tutorials/calibration.html#calibration"><span class="std std-ref">Calibration</span></a>.</p>
+<p>To calibrate the model open a new python terminal (or a jupyter notebook),
+import your model and make a new instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;</span> <span class="kn">import</span> <span class="nn">ollin</span>
+<span class="o">&gt;&gt;</span> <span class="kn">from</span> <span class="nn">new_model</span> <span class="k">import</span> <span class="n">Model</span>
+<span class="o">&gt;&gt;</span> <span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Ollin has a calibration tool that can be run in the following fashion:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;</span> <span class="n">calibrated_model</span><span class="p">,</span> <span class="n">calibrated_parameters</span> <span class="o">=</span> <span class="n">ollin</span><span class="o">.</span><span class="n">calibrate</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This function will run many simulations so be prepared to wait. If you wish to
+have some feedback on progress configure logging before running calibrate:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;</span> <span class="kn">import</span> <span class="nn">logging</span>
+<span class="o">&gt;&gt;</span> <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The calibration procedure can be configured, see <a class="reference internal" href="../api/calibration/config.html#module-ollin.calibration.config" title="ollin.calibration.config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">calibration.config</span></code></a> to
+consult all settings.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Calibration simulations are executed in all available cores of
+host computer and will consume large amounts of memory. We recomend stopping
+other processes before calibration.</p>
+</div>
+<p>With the results of the simulations, the parameters are fitted to the generated
+data and returned in a dictionary. Use these values to adjust the default
+parameters in the code file. So if:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;</span> <span class="n">calibrated_parameters</span>
+<span class="p">{</span>
+  <span class="s1">&#39;home_range&#39;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">59.02095500748234</span><span class="p">,</span>
+    <span class="s1">&#39;exponent&#39;</span><span class="p">:</span> <span class="mf">1.903072119815655</span>
+  <span class="p">},</span>
+  <span class="s1">&#39;density&#39;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;hr_exp&#39;</span><span class="p">:</span> <span class="mf">0.8441724458551622</span><span class="p">,</span>
+    <span class="s1">&#39;density_exp&#39;</span><span class="p">:</span> <span class="mf">0.8501718469622543</span><span class="p">,</span>
+    <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">4.950773510732457</span><span class="p">,</span>
+    <span class="s1">&#39;niche_size_exp&#39;</span><span class="p">:</span> <span class="mf">0.8760285191282491</span>
+  <span class="p">},</span>
+  <span class="s1">&#39;velocity&#39;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">0.002223569915673946</span><span class="p">,</span>
+    <span class="s1">&#39;beta&#39;</span><span class="p">:</span> <span class="mf">1.013044346939526</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Then edit the file to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ollin</span> <span class="k">import</span> <span class="n">MovementModel</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">MovementModel</span><span class="p">):</span>
+  <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Random Movement&#39;</span>
+  <span class="n">default_parameters</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;movement&#39;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">0.4</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;home_range&#39;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">59.02095500748234</span><span class="p">,</span>
+      <span class="s1">&#39;exponent&#39;</span><span class="p">:</span> <span class="mf">1.903072119815655</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;density&#39;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s1">&#39;hr_exp&#39;</span><span class="p">:</span> <span class="mf">0.8441724458551622</span><span class="p">,</span>
+      <span class="s1">&#39;density_exp&#39;</span><span class="p">:</span> <span class="mf">0.8501718469622543</span><span class="p">,</span>
+      <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">4.950773510732457</span><span class="p">,</span>
+      <span class="s1">&#39;niche_size_exp&#39;</span><span class="p">:</span> <span class="mf">0.8760285191282491</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;velocity&#39;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">0.002223569915673946</span><span class="p">,</span>
+      <span class="s1">&#39;beta&#39;</span><span class="p">:</span> <span class="mf">1.013044346939526</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">generate_movement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_position</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">velocity</span><span class="p">):</span>
+    <span class="n">movement_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;movement&#39;</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">movement_parameters</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span>
+
+    <span class="n">num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">initial_position</span><span class="p">)</span>
+    <span class="n">movement</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="n">num</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">movement</span>
+</pre></div>
+</div>
+<p>The model is now calibrated.</p>
+</div>
+<div class="section" id="add-file-to-models-library">
+<h2>Add file to models library<a class="headerlink" href="#add-file-to-models-library" title="Permalink to this headline">¶</a></h2>
+<p>Once the model is calibrated, fork the <a class="reference external" href="https://github.com/mbsantiago/ollin">repository</a> and move the file to the directory
+<code class="docutils literal notranslate"><span class="pre">ollin/movement_models/</span></code>. Reinstall Ollin using the setup script (see
+<a class="reference internal" href="../installation/main.html#installation"><span class="std std-ref">Installation Guide</span></a>) and use the model freely! Don’t forget to send the pull
+request.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main.html">Contribute</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="main.html#general-contribution-procedure">General Contribution Procedure</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="main.html#model-contribution">Model Contribution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#documentation-contribution">Documentation Contribution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#feature-suggestion">Feature suggestion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#bug-reports">Bug Reports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#mantainers">Mantainers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="main.html">Contribute</a><ul>
+      <li>Previous: <a href="main.html" title="previous chapter">Contribute</a></li>
+      <li>Next: <a href="estimation.html" title="next chapter">Add new Estimation Model</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../_sources/contribute/movement_model.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

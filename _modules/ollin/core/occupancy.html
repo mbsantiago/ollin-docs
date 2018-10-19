@@ -1,0 +1,400 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ollin.core.occupancy &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ollin.core.occupancy</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module for occupancy class and calculation.</span>
+
+<span class="sd">Occupancy can be loosely defined as proportion of area occupied by some target</span>
+<span class="sd">species. Unfortunately this definition is not rigorous enough to define a</span>
+<span class="sd">single concept. Hence definitions have proliferated in the literature, mainly</span>
+<span class="sd">guided by study restriction and convenience.</span>
+
+<span class="sd">Three main issues arise when trying to clearly define occupancy:</span>
+
+<span class="sd">    1. The definition of space being occupied by some species: In some cases,</span>
+<span class="sd">       where niches are sharply delimited by geographical features, such as</span>
+<span class="sd">       ponds, occupancy refers to the proportion of such areas occupied by</span>
+<span class="sd">       some target species at an instant in time. But when movement is not</span>
+<span class="sd">       restrained by clear boundaries occupancy is harder to</span>
+<span class="sd">       define. One approach is defining occupancy as the proportion of points</span>
+<span class="sd">       at which individuals of the target species are observed, having</span>
+<span class="sd">       preselected the points as being &quot;representative&quot;. This seems to be an</span>
+<span class="sd">       ad hoc definition for camera trap studies. Finally when movement data</span>
+<span class="sd">       is available occupancy can be defined, more faithful to the original</span>
+<span class="sd">       concept, as the area visited by the individuals of the target species.</span>
+<span class="sd">       But this also introduces the following two problems:</span>
+<span class="sd">    2. Calculation of area visited by an individual usually starts by some sort</span>
+<span class="sd">       discretization of space, and is done by counting the number of cells of</span>
+<span class="sd">       discretized space that individuals touch along its movement. This</span>
+<span class="sd">       implies that there will be some dependence of the final occupancy value</span>
+<span class="sd">       on the method of space discretization.</span>
+<span class="sd">    3. Finally, when occupancy is calculated from movement data, there must be</span>
+<span class="sd">       a choice of time span for which to calculate occupancy. Occupancy values</span>
+<span class="sd">       will be sensitive to choice of time span, or could even be result in a</span>
+<span class="sd">       useless feature if, for example, individuals of species fully roam the</span>
+<span class="sd">       available land given enough time, even though they usually take a small</span>
+<span class="sd">       proportion of land area at smaller time scales.</span>
+
+<span class="sd">Due to the nature of the data generated in movement simulations we have chosen</span>
+<span class="sd">to define occupancy as the result of the following calculations:</span>
+
+<span class="sd">1. Select some definite time span, say 90 days of movement.</span>
+<span class="sd">2. Use some pre defined function to obtain spatial resolution from home range</span>
+<span class="sd">   data and discretize study site with such resolution. Symbolically::</span>
+
+<span class="sd">      resolution = f(home_range, parameters)</span>
+
+<span class="sd">   See :py:func:`.occupancy_resolution`</span>
+
+<span class="sd">3. For each time step mark as visited all cells that have some individual of</span>
+<span class="sd">   the target species contained in it.</span>
+<span class="sd">4. For each cell of discretized space, calculate the proportion of times the</span>
+<span class="sd">   cell was visited.</span>
+<span class="sd">5. Occupancy is defined as the average of this proportion of times cells where</span>
+<span class="sd">   visited.</span>
+
+<span class="sd">We have chosen to use proportion of occupancy, or rate of occupancy, since</span>
+<span class="sd">this value is less sensitive to changes in time span selected for occupancy</span>
+<span class="sd">calculation. In simulated situations it will always converge to some specific</span>
+<span class="sd">value as time span grows.</span>
+
+<span class="sd">All values used in the occupancy calculation, such as the grid of visited cells</span>
+<span class="sd">per time step, number of times a cell was visited and others, are stored within</span>
+<span class="sd">a :py:obj:`Occupancy` object.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="k">import</span> <span class="n">xrange</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="k">import</span> <span class="n">jit</span><span class="p">,</span> <span class="n">float64</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">occupancy_resolution</span>
+
+
+<div class="viewcode-block" id="Occupancy"><a class="viewcode-back" href="../../../api/core/occupancy.html#ollin.core.occupancy.Occupancy">[docs]</a><span class="k">class</span> <span class="nc">Occupancy</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Occupancy information and calculation class.</span>
+
+<span class="sd">    Occupancy can be calculated from movement data in the following way:</span>
+
+<span class="sd">    1. Select some spatial resolution to use in space discretization.</span>
+<span class="sd">    2. Discretize site to obtain n x m cells.</span>
+<span class="sd">    3. Initialize an array of shape [time_steps, n, m] to zeros.</span>
+<span class="sd">    4. Set ::</span>
+
+<span class="sd">          array[t, i, j] = 1</span>
+
+<span class="sd">       if some individual is in cell (i,j) at time step t.</span>
+<span class="sd">    5. Occupancy is the average of this array.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    movement : :py:obj:`.MovementData`</span>
+<span class="sd">        Movement data for which to calculate occupancy.</span>
+<span class="sd">    steps : int</span>
+<span class="sd">        Number of movement steps contained in movement data.</span>
+<span class="sd">    resolution : float</span>
+<span class="sd">        Spatial resolution (in Km) for site discretization.</span>
+<span class="sd">    grid : array</span>
+<span class="sd">        Array of shape [time_steps, x, y] where [x, y] is the</span>
+<span class="sd">        size of the discretized site. Holds cell occupancy at</span>
+<span class="sd">        each time step.</span>
+<span class="sd">    cell_occupancy : array</span>
+<span class="sd">        Array of shape [x, y] where [x, y] is the size of the</span>
+<span class="sd">        discretized site. Holds cell occupancy.</span>
+<span class="sd">    occupancy : float</span>
+<span class="sd">        Occupancy measure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">movement</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct Occupancy object.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        movement : :py:obj:`.MovementData`</span>
+<span class="sd">            Movement data to be analized.</span>
+<span class="sd">        resolution : float, optional</span>
+<span class="sd">            Resolution for space discretization. If none is given,</span>
+<span class="sd">            resolution will be calculated from home_range data</span>
+<span class="sd">            stored in the movement data.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">movement</span> <span class="o">=</span> <span class="n">movement</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="n">movement</span><span class="o">.</span><span class="n">steps</span>
+
+        <span class="k">if</span> <span class="n">resolution</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">resolution</span> <span class="o">=</span> <span class="n">occupancy_resolution</span><span class="p">(</span><span class="n">movement</span><span class="o">.</span><span class="n">home_range</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="n">resolution</span>
+
+        <span class="n">range_</span> <span class="o">=</span> <span class="n">movement</span><span class="o">.</span><span class="n">site</span><span class="o">.</span><span class="n">range</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">_make_grid</span><span class="p">(</span><span class="n">movement</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">range_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cell_occupancy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">occupancy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_occupancy</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Occupancy.plot"><a class="viewcode-back" href="../../../api/core/occupancy.html#ollin.core.occupancy.Occupancy.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+            <span class="n">include</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">occupancy_cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span>
+            <span class="n">occupancy_level</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+            <span class="n">occupancy_alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot discretized space occupancy information.</span>
+
+<span class="sd">        Occupancy plotting adds the following optional components to the</span>
+<span class="sd">        plot:</span>
+
+<span class="sd">        1. &quot;occupancy&quot;:</span>
+<span class="sd">            If present in include list, cells of discretized space will be</span>
+<span class="sd">            shown with a color representing the rate of occupation of such</span>
+<span class="sd">            cell. Colors will be selected using a color map. See</span>
+<span class="sd">            :py:mod:`matplotlib.cm` to see all colormap options.</span>
+<span class="sd">        2. &quot;occupancy_contour&quot;:</span>
+<span class="sd">            If present in include list, the border of the region containing all</span>
+<span class="sd">            cells with occupancy higher than some threshold will be plotted.</span>
+
+<span class="sd">        All other components in the include list will be passed down to the</span>
+<span class="sd">        MovementData plotting method. See :py:meth:`.MovementData.plot`</span>
+<span class="sd">        for all plot components defined at that level.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`, optional</span>
+<span class="sd">            Axes object in which to plot occupancy information.</span>
+<span class="sd">        figsize : list or tuple, optional</span>
+<span class="sd">            Size of figure to create if no axes object was given. Defaults to</span>
+<span class="sd">            (10, 10).</span>
+<span class="sd">        include : list or tuple, optional</span>
+<span class="sd">            List of components to add to the plot. Components list will be</span>
+<span class="sd">            passed to the Site object to add the corresponding components.</span>
+<span class="sd">        occupancy_cmap : str, optional</span>
+<span class="sd">            Colormap to use to codify occupancy level to color. Defaults to</span>
+<span class="sd">            &#39;Blues&#39;.</span>
+<span class="sd">        occupancy_level : float, optional</span>
+<span class="sd">            Threshold at which to draw boundary for occupancy contour.</span>
+<span class="sd">        occupancy_alpha : float, optional</span>
+<span class="sd">            Alpha value of cell colors.</span>
+<span class="sd">        kwargs : dict, optional</span>
+<span class="sd">            All other keyword arguments will be passed to the MovementData&#39;s</span>
+<span class="sd">            plotting method.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`</span>
+<span class="sd">            Return axes for further plotting.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>  <span class="c1"># pylint: disable=import-error</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">include</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">include</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s1">&#39;rectangle&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;niche_boundary&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;occupancy&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;occupancy_contour&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">movement</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="n">include</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;occupancy&#39;</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
+            <span class="n">grid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_occupancy</span>
+
+            <span class="n">range_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">movement</span><span class="o">.</span><span class="n">site</span><span class="o">.</span><span class="n">range</span>
+            <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">xcoord</span><span class="p">,</span> <span class="n">ycoord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">range_</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">h</span><span class="p">),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">range_</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">w</span><span class="p">))</span>
+            <span class="n">cm</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span>
+                <span class="n">xcoord</span><span class="p">,</span>
+                <span class="n">ycoord</span><span class="p">,</span>
+                <span class="n">grid</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                <span class="n">cmap</span><span class="o">=</span><span class="n">occupancy_cmap</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="n">occupancy_alpha</span><span class="p">,</span>
+                <span class="n">vmax</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                <span class="n">vmin</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cm</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s1">&#39;occupancy_contour&#39;</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
+                <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">grid</span> <span class="o">&gt;=</span> <span class="n">occupancy_level</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">xcoord</span><span class="p">,</span> <span class="n">ycoord</span><span class="p">,</span> <span class="n">mask</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="Occupancy.plot_occupancy_timeseries"><a class="viewcode-back" href="../../../api/core/occupancy.html#ollin.core.occupancy.Occupancy.plot_occupancy_timeseries">[docs]</a>    <span class="k">def</span> <span class="nf">plot_occupancy_timeseries</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+            <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot occupancy values at different times.</span>
+
+<span class="sd">        Occupancy is defined as the mean rate of occupation. The rate of</span>
+<span class="sd">        occupation is calculated over some timespan. This method calculates</span>
+<span class="sd">        occupancy at all possible timespans and plots the resulting timeseries</span>
+<span class="sd">        for visual comparison.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`, optional</span>
+<span class="sd">            Axes in which to plot timeseries. If not provided new axes will be</span>
+<span class="sd">            created.</span>
+<span class="sd">        figsize : tuple or list, optional</span>
+<span class="sd">            Size of figure to be created if no axes where provided.</span>
+<span class="sd">        color : str, optional</span>
+<span class="sd">            Name of color to use for plot.</span>
+<span class="sd">        label : str, optional</span>
+<span class="sd">            Label of plot.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`, optional</span>
+<span class="sd">            Axes of plot, returned for further plotting.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+
+        <span class="n">times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">movement</span><span class="o">.</span><span class="n">times</span>
+        <span class="n">occupancies</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[:</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">times</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="mi">2</span><span class="p">:],</span> <span class="n">occupancies</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Time (Days)&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Occupancy&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div></div>
+
+
+<span class="nd">@jit</span><span class="p">(</span>
+    <span class="n">float64</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:](</span>
+        <span class="n">float64</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:],</span>
+        <span class="n">float64</span><span class="p">[:],</span>
+        <span class="n">float64</span><span class="p">),</span>
+    <span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_make_grid</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="nb">range</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+    <span class="n">num_sides_x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">resolution</span><span class="p">))</span>
+    <span class="n">num_sides_y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">resolution</span><span class="p">))</span>
+
+    <span class="n">num</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">space</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">steps</span><span class="p">,</span> <span class="n">num_sides_x</span><span class="p">,</span> <span class="n">num_sides_y</span><span class="p">))</span>
+
+    <span class="n">denominator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,))</span>
+    <span class="n">denominator</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_sides_x</span>
+    <span class="n">denominator</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_sides_y</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor_divide</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">denominator</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+
+    <span class="n">disc_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="n">disc_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_sides_x</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">disc_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_sides_y</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">disc_range</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">num</span><span class="p">):</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span>
+            <span class="n">space</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">space</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

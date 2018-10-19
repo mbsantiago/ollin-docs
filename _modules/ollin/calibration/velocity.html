@@ -1,0 +1,366 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ollin.calibration.velocity &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ollin.calibration.velocity</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Pool</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="k">import</span> <span class="nb">range</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">ollin</span>
+
+<span class="kn">from</span> <span class="nn">..core.utils</span> <span class="k">import</span> <span class="n">velocity_modification</span>
+<span class="kn">from</span> <span class="nn">.config</span> <span class="k">import</span> <span class="n">BASE_CONFIG</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="VelocityCalibrator"><a class="viewcode-back" href="../../../api/calibration/calibrators.html#ollin.calibration.velocity.VelocityCalibrator">[docs]</a><span class="k">class</span> <span class="nc">VelocityCalibrator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to calibrate velocity parameters.</span>
+
+<span class="sd">    This class also holds all data generated in calibration simulations.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : :py:obj:`dict`</span>
+<span class="sd">        Dictionary holding all configuration settings. See :py:mod:`.config` to</span>
+<span class="sd">        see all relevant settings.</span>
+<span class="sd">    movement_model : :py:obj:`.MovementModel`</span>
+<span class="sd">        Reference to Movement model instance being calibrated.</span>
+<span class="sd">    velocity_info : :py:obj:`array`</span>
+<span class="sd">        Numpy array of size::</span>
+
+<span class="sd">            [num_velocities, num_niches, num_worlds, trials_per_world]</span>
+
+<span class="sd">        containing velocity information. Here:</span>
+
+<span class="sd">        :num_velocities:</span>
+<span class="sd">            Refers to the number of simulated mean velocities held in the</span>
+<span class="sd">            configuration array ``config[&#39;velocities&#39;]``.</span>
+<span class="sd">        :num_niches:</span>
+<span class="sd">            Refers to the number of simulated niche sizes held in the</span>
+<span class="sd">            configuration array ``config[&#39;niche_sizes&#39;]``.</span>
+<span class="sd">        :num_worlds:</span>
+<span class="sd">            Refers to the number of sites created per selection of</span>
+<span class="sd">            ``(velocity, niche_size)``.</span>
+<span class="sd">        :trials_per_world:</span>
+<span class="sd">            Refers to the number of simulations made per site.</span>
+
+<span class="sd">        Hence if::</span>
+
+<span class="sd">            vel = self.velocity_info[i, j, k, l]</span>
+
+<span class="sd">        this means that ``vel`` was the mean velocity in the l-th simulation at</span>
+<span class="sd">        the k-th world generated with niche size ``config[&#39;niche_sizes&#39;][j]``</span>
+<span class="sd">        and &quot;model&quot;-mean velocity ``config[&#39;velocities&#39;][i]``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">movement_model</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Handle configurations</span>
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="n">BASE_CONFIG</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">copy</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">copy</span>
+
+        <span class="c1"># Point to movement model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span> <span class="o">=</span> <span class="n">movement_model</span>
+
+        <span class="c1"># Calculate calibrations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">velocity_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_velocity_info</span><span class="p">()</span>
+
+<div class="viewcode-block" id="VelocityCalibrator.calculate_velocity_info"><a class="viewcode-back" href="../../../api/calibration/calibrators.html#ollin.calibration.velocity.VelocityCalibrator.calculate_velocity_info">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_velocity_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Simulate multiple scenarios in parallel and record mean velocity.&quot;&quot;&quot;</span>
+        <span class="n">trials_per_world</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;trials_per_world&#39;</span><span class="p">]</span>
+        <span class="n">velocities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;velocities&#39;</span><span class="p">]</span>
+        <span class="n">niche_sizes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;niche_sizes&#39;</span><span class="p">]</span>
+        <span class="n">num_worlds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;num_worlds&#39;</span><span class="p">]</span>
+        <span class="n">range_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">]</span>
+        <span class="n">days</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;days&#39;</span><span class="p">]</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span>
+
+        <span class="n">num_velocities</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">velocities</span><span class="p">)</span>
+        <span class="n">num_niches</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">niche_sizes</span><span class="p">)</span>
+
+        <span class="n">all_info</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span>
+            <span class="n">num_velocities</span><span class="p">,</span>
+            <span class="n">num_niches</span><span class="p">,</span>
+            <span class="n">num_worlds</span><span class="p">,</span>
+            <span class="n">trials_per_world</span>
+        <span class="p">])</span>
+
+        <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">velocity</span><span class="p">,</span> <span class="n">niche_size</span><span class="p">,</span> <span class="n">trials_per_world</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">velocity</span> <span class="ow">in</span> <span class="n">velocities</span>
+            <span class="k">for</span> <span class="n">niche_size</span> <span class="ow">in</span> <span class="n">niche_sizes</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_worlds</span><span class="p">)]</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Simulating </span><span class="si">%d</span><span class="s1"> scenarios&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">arguments</span><span class="p">))</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map_async</span><span class="p">(</span>
+                <span class="n">partial</span><span class="p">(</span>
+                    <span class="n">_get_single_velocity_info</span><span class="p">,</span>
+                    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+                    <span class="nb">range</span><span class="o">=</span><span class="n">range_</span><span class="p">,</span>
+                    <span class="n">days</span><span class="o">=</span><span class="n">days</span><span class="p">),</span>
+                <span class="n">arguments</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">999999999999999</span><span class="p">)</span>
+
+            <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">KeyboardInterrupt</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Simulations done&#39;</span><span class="p">)</span>
+
+        <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_velocities</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_niches</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_worlds</span><span class="p">)]</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">),</span> <span class="n">result</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">arguments</span><span class="p">,</span> <span class="n">results</span><span class="p">):</span>
+            <span class="n">all_info</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">result</span>
+
+        <span class="k">return</span> <span class="n">all_info</span></div>
+
+<div class="viewcode-block" id="VelocityCalibrator.plot"><a class="viewcode-back" href="../../../api/calibration/calibrators.html#ollin.calibration.velocity.VelocityCalibrator.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Set2&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plotfit</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot graph of generated velocity data and fit.</span>
+
+<span class="sd">        Plots a graph of internal Model&#39;s &quot;mean-velocity&quot; parameter versus</span>
+<span class="sd">        resulting simulated mean velocity. Adds a fitted line to the plot if</span>
+<span class="sd">        desired to visually check calibration.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        cmap : :py:obj:`str`, optional</span>
+<span class="sd">            Name of colormap to use for diferent niche sizes.</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`, optional</span>
+<span class="sd">            Ax in which to draw the plot. If not given a new one will be</span>
+<span class="sd">            created.</span>
+<span class="sd">        fisize : :py:obj:`tuple`, optional</span>
+<span class="sd">            Size of figure to create. Used only if no ax is given.</span>
+<span class="sd">        plotfit : bool, optional</span>
+<span class="sd">            If True will plot a line fitted to velocity data. Defaults to True.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`</span>
+<span class="sd">            Ax object for further plotting.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="kn">from</span> <span class="nn">matplotlib.cm</span> <span class="k">import</span> <span class="n">get_cmap</span>
+
+        <span class="n">niche_sizes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;niche_sizes&#39;</span><span class="p">])</span>
+        <span class="n">velocities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;velocities&#39;</span><span class="p">])</span>
+        <span class="n">num_niches</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">niche_sizes</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">get_cmap</span><span class="p">(</span><span class="n">cmap</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">nsz</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">niche_sizes</span><span class="p">):</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="n">num_niches</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity_info</span><span class="p">[:,</span> <span class="n">n</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+            <span class="n">std</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="n">velocities</span><span class="p">,</span>
+                <span class="n">mean</span><span class="p">,</span>
+                <span class="n">c</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Niche Size: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">nsz</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+                <span class="n">velocities</span><span class="p">,</span>
+                <span class="n">mean</span> <span class="o">-</span> <span class="n">std</span><span class="p">,</span>
+                <span class="n">mean</span> <span class="o">+</span> <span class="n">std</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+                <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">plotfit</span><span class="p">:</span>
+                <span class="n">vel_mod</span> <span class="o">=</span> <span class="n">velocity_modification</span><span class="p">(</span>
+                    <span class="n">nsz</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+                <span class="n">target_velocities</span> <span class="o">=</span> <span class="n">vel_mod</span> <span class="o">*</span> <span class="n">velocities</span>
+
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                    <span class="n">velocities</span><span class="p">,</span>
+                    <span class="n">target_velocities</span><span class="p">,</span>
+                    <span class="n">c</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span>
+                    <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Niche Size: </span><span class="si">{}</span><span class="s1"> (fit)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">nsz</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Velocity Calibration&#39;</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;target velocity (Km/day)&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;calculated velocity (Km/day)&#39;</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">velocities</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">velocities</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="VelocityCalibrator.fit"><a class="viewcode-back" href="../../../api/calibration/calibrators.html#ollin.calibration.velocity.VelocityCalibrator.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fit correction parameter to simulated velocity data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        fit : :py:obj:`dict`</span>
+<span class="sd">            Dictionary holding the fitted parameters.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="k">import</span> <span class="n">LinearRegression</span>
+
+        <span class="n">niche_sizes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;niche_sizes&#39;</span><span class="p">])</span>
+        <span class="n">velocities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;velocities&#39;</span><span class="p">])</span>
+
+        <span class="n">num_niches</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">niche_sizes</span><span class="p">)</span>
+
+        <span class="n">coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_niches</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_niches</span><span class="p">):</span>
+
+            <span class="n">given_vel</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">simulated_vel</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">vel</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">velocities</span><span class="p">):</span>
+                <span class="n">vdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity_info</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+                <span class="n">given_vel</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vel</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">vdata</span><span class="p">))</span>
+                <span class="n">simulated_vel</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vdata</span><span class="p">)</span>
+
+            <span class="n">given_vel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">given_vel</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">simulated_vel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">simulated_vel</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">(</span><span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">given_vel</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">simulated_vel</span><span class="p">)</span>
+            <span class="n">coefficients</span><span class="p">[</span><span class="n">num</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">model</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">()</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">niche_sizes</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">coefficients</span><span class="p">)</span>
+
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">intercept_</span>
+
+        <span class="n">fit</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span>
+            <span class="s1">&#39;beta&#39;</span><span class="p">:</span> <span class="n">beta</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">fit</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">_get_single_velocity_info</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="nb">range</span><span class="p">,</span> <span class="n">days</span><span class="p">):</span>
+    <span class="n">velocity</span><span class="p">,</span> <span class="n">niche_size</span><span class="p">,</span> <span class="n">num_individuals</span> <span class="o">=</span> <span class="n">args</span>
+    <span class="n">site</span> <span class="o">=</span> <span class="n">ollin</span><span class="o">.</span><span class="n">Site</span><span class="o">.</span><span class="n">make_random</span><span class="p">(</span><span class="n">niche_size</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="nb">range</span><span class="p">)</span>
+    <span class="n">mov</span> <span class="o">=</span> <span class="n">ollin</span><span class="o">.</span><span class="n">Movement</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+        <span class="n">site</span><span class="p">,</span>
+        <span class="n">num</span><span class="o">=</span><span class="n">num_individuals</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="n">velocity</span><span class="p">,</span>
+        <span class="n">days</span><span class="o">=</span><span class="n">days</span><span class="p">,</span>
+        <span class="n">movement_model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">analyzer</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">analyze</span><span class="p">(</span><span class="s1">&#39;velocity&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

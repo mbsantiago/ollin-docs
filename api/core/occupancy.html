@@ -1,0 +1,331 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Occupancy Module &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Utils Module" href="utils.html" />
+    <link rel="prev" title="Detection Module" href="detection.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ollin.core.occupancy">
+<span id="occupancy-module"></span><h1>Occupancy Module<a class="headerlink" href="#module-ollin.core.occupancy" title="Permalink to this headline">¶</a></h1>
+<p>Module for occupancy class and calculation.</p>
+<p>Occupancy can be loosely defined as proportion of area occupied by some target
+species. Unfortunately this definition is not rigorous enough to define a
+single concept. Hence definitions have proliferated in the literature, mainly
+guided by study restriction and convenience.</p>
+<p>Three main issues arise when trying to clearly define occupancy:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>The definition of space being occupied by some species: In some cases,
+where niches are sharply delimited by geographical features, such as
+ponds, occupancy refers to the proportion of such areas occupied by
+some target species at an instant in time. But when movement is not
+restrained by clear boundaries occupancy is harder to
+define. One approach is defining occupancy as the proportion of points
+at which individuals of the target species are observed, having
+preselected the points as being “representative”. This seems to be an
+ad hoc definition for camera trap studies. Finally when movement data
+is available occupancy can be defined, more faithful to the original
+concept, as the area visited by the individuals of the target species.
+But this also introduces the following two problems:</li>
+<li>Calculation of area visited by an individual usually starts by some sort
+discretization of space, and is done by counting the number of cells of
+discretized space that individuals touch along its movement. This
+implies that there will be some dependence of the final occupancy value
+on the method of space discretization.</li>
+<li>Finally, when occupancy is calculated from movement data, there must be
+a choice of time span for which to calculate occupancy. Occupancy values
+will be sensitive to choice of time span, or could even be result in a
+useless feature if, for example, individuals of species fully roam the
+available land given enough time, even though they usually take a small
+proportion of land area at smaller time scales.</li>
+</ol>
+</div></blockquote>
+<p>Due to the nature of the data generated in movement simulations we have chosen
+to define occupancy as the result of the following calculations:</p>
+<ol class="arabic">
+<li><p class="first">Select some definite time span, say 90 days of movement.</p>
+</li>
+<li><p class="first">Use some pre defined function to obtain spatial resolution from home range
+data and discretize study site with such resolution. Symbolically:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">resolution</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">home_range</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="utils.html#ollin.core.utils.occupancy_resolution" title="ollin.core.utils.occupancy_resolution"><code class="xref py py-func docutils literal notranslate"><span class="pre">occupancy_resolution()</span></code></a></p>
+</li>
+<li><p class="first">For each time step mark as visited all cells that have some individual of
+the target species contained in it.</p>
+</li>
+<li><p class="first">For each cell of discretized space, calculate the proportion of times the
+cell was visited.</p>
+</li>
+<li><p class="first">Occupancy is defined as the average of this proportion of times cells where
+visited.</p>
+</li>
+</ol>
+<p>We have chosen to use proportion of occupancy, or rate of occupancy, since
+this value is less sensitive to changes in time span selected for occupancy
+calculation. In simulated situations it will always converge to some specific
+value as time span grows.</p>
+<p>All values used in the occupancy calculation, such as the grid of visited cells
+per time step, number of times a cell was visited and others, are stored within
+a <a class="reference internal" href="#ollin.core.occupancy.Occupancy" title="ollin.core.occupancy.Occupancy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Occupancy</span></code></a> object.</p>
+<dl class="class">
+<dt id="ollin.core.occupancy.Occupancy">
+<em class="property">class </em><code class="descclassname">ollin.core.occupancy.</code><code class="descname">Occupancy</code><span class="sig-paren">(</span><em>movement</em>, <em>resolution=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/core/occupancy.html#Occupancy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.core.occupancy.Occupancy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Occupancy information and calculation class.</p>
+<p>Occupancy can be calculated from movement data in the following way:</p>
+<ol class="arabic">
+<li><p class="first">Select some spatial resolution to use in space discretization.</p>
+</li>
+<li><p class="first">Discretize site to obtain n x m cells.</p>
+</li>
+<li><p class="first">Initialize an array of shape [time_steps, n, m] to zeros.</p>
+</li>
+<li><p class="first">Set</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">array</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>if some individual is in cell (i,j) at time step t.</p>
+</li>
+<li><p class="first">Occupancy is the average of this array.</p>
+</li>
+</ol>
+<dl class="attribute">
+<dt id="ollin.core.occupancy.Occupancy.movement">
+<code class="descname">movement</code><a class="headerlink" href="#ollin.core.occupancy.Occupancy.movement" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="movement.html#ollin.core.movement.MovementData" title="ollin.core.movement.MovementData"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MovementData</span></code></a> – Movement data for which to calculate occupancy.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.core.occupancy.Occupancy.steps">
+<code class="descname">steps</code><a class="headerlink" href="#ollin.core.occupancy.Occupancy.steps" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of movement steps contained in movement data.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.core.occupancy.Occupancy.resolution">
+<code class="descname">resolution</code><a class="headerlink" href="#ollin.core.occupancy.Occupancy.resolution" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – Spatial resolution (in Km) for site discretization.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.core.occupancy.Occupancy.grid">
+<code class="descname">grid</code><a class="headerlink" href="#ollin.core.occupancy.Occupancy.grid" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>array</em> – Array of shape [time_steps, x, y] where [x, y] is the
+size of the discretized site. Holds cell occupancy at
+each time step.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.core.occupancy.Occupancy.cell_occupancy">
+<code class="descname">cell_occupancy</code><a class="headerlink" href="#ollin.core.occupancy.Occupancy.cell_occupancy" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>array</em> – Array of shape [x, y] where [x, y] is the size of the
+discretized site. Holds cell occupancy.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.core.occupancy.Occupancy.occupancy">
+<code class="descname">occupancy</code><a class="headerlink" href="#ollin.core.occupancy.Occupancy.occupancy" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – Occupancy measure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.core.occupancy.Occupancy.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>ax=None</em>, <em>figsize=(10</em>, <em>10)</em>, <em>include=None</em>, <em>occupancy_cmap='Blues'</em>, <em>occupancy_level=0.2</em>, <em>occupancy_alpha=0.3</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/core/occupancy.html#Occupancy.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.core.occupancy.Occupancy.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot discretized space occupancy information.</p>
+<p>Occupancy plotting adds the following optional components to the
+plot:</p>
+<ol class="arabic simple">
+<li><dl class="first docutils">
+<dt>“occupancy”:</dt>
+<dd>If present in include list, cells of discretized space will be
+shown with a color representing the rate of occupation of such
+cell. Colors will be selected using a color map. See
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">matplotlib.cm</span></code> to see all colormap options.</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>“occupancy_contour”:</dt>
+<dd>If present in include list, the border of the region containing all
+cells with occupancy higher than some threshold will be plotted.</dd>
+</dl>
+</li>
+</ol>
+<p>All other components in the include list will be passed down to the
+MovementData plotting method. See <a class="reference internal" href="movement.html#ollin.core.movement.MovementData.plot" title="ollin.core.movement.MovementData.plot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">MovementData.plot()</span></code></a>
+for all plot components defined at that level.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ax</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code>, optional) – Axes object in which to plot occupancy information.</li>
+<li><strong>figsize</strong> (<em>list</em><em> or </em><em>tuple</em><em>, </em><em>optional</em>) – Size of figure to create if no axes object was given. Defaults to
+(10, 10).</li>
+<li><strong>include</strong> (<em>list</em><em> or </em><em>tuple</em><em>, </em><em>optional</em>) – List of components to add to the plot. Components list will be
+passed to the Site object to add the corresponding components.</li>
+<li><strong>occupancy_cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Colormap to use to codify occupancy level to color. Defaults to
+‘Blues’.</li>
+<li><strong>occupancy_level</strong> (<em>float</em><em>, </em><em>optional</em>) – Threshold at which to draw boundary for occupancy contour.</li>
+<li><strong>occupancy_alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – Alpha value of cell colors.</li>
+<li><strong>kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – All other keyword arguments will be passed to the MovementData’s
+plotting method.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>ax</strong> – Return axes for further plotting.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.core.occupancy.Occupancy.plot_occupancy_timeseries">
+<code class="descname">plot_occupancy_timeseries</code><span class="sig-paren">(</span><em>ax=None</em>, <em>figsize=(10</em>, <em>10)</em>, <em>color='red'</em>, <em>label=''</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/core/occupancy.html#Occupancy.plot_occupancy_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.core.occupancy.Occupancy.plot_occupancy_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot occupancy values at different times.</p>
+<p>Occupancy is defined as the mean rate of occupation. The rate of
+occupation is calculated over some timespan. This method calculates
+occupancy at all possible timespans and plots the resulting timeseries
+for visual comparison.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ax</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code>, optional) – Axes in which to plot timeseries. If not provided new axes will be
+created.</li>
+<li><strong>figsize</strong> (<em>tuple</em><em> or </em><em>list</em><em>, </em><em>optional</em>) – Size of figure to be created if no axes where provided.</li>
+<li><strong>color</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of color to use for plot.</li>
+<li><strong>label</strong> (<em>str</em><em>, </em><em>optional</em>) – Label of plot.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>ax</strong> – Axes of plot, returned for further plotting.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code>, optional</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="core.html">Core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_models/movement models.html">Movement Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_analyzers/movement_analyzers.html">Movement Analyzers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../estimation/main.html">Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../calibration/calibration.html">Calibration</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+  <li><a href="core.html">Core</a><ul>
+      <li>Previous: <a href="detection.html" title="previous chapter">Detection Module</a></li>
+      <li>Next: <a href="utils.html" title="next chapter">Utils Module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../../_sources/api/core/occupancy.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

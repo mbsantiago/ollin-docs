@@ -1,0 +1,156 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Gradient Levy Model &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Gradient Brownian Model" href="gradient_brownian.html" />
+    <link rel="prev" title="Constant Brownian Model" href="constant_brownian.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ollin.movement_models.gradient_levy">
+<span id="gradient-levy-model"></span><h1>Gradient Levy Model<a class="headerlink" href="#module-ollin.movement_models.gradient_levy" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="ollin.movement_models.gradient_levy.Model">
+<em class="property">class </em><code class="descclassname">ollin.movement_models.gradient_levy.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>parameters=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/movement_models/gradient_levy.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.movement_models.gradient_levy.Model" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="ollin.movement_models.gradient_levy.Model.generate_movement">
+<code class="descname">generate_movement</code><span class="sig-paren">(</span><em>initial_positions</em>, <em>site</em>, <em>steps</em>, <em>velocity</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/movement_models/gradient_levy.html#Model.generate_movement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.movement_models.gradient_levy.Model.generate_movement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate simulated movement from initial positions and conditions.</p>
+<p>This is an abstract method that must be implemented in any subclass.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>initial_position</strong> (<em>array</em>) – Array of initial positions of shape [num, 2] to specify coordinates
+of individuals to be simulated.</li>
+<li><strong>site</strong> (<a class="reference internal" href="../../api/core/sites.html#ollin.core.sites.Site" title="ollin.core.sites.Site"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Site</span></code></a>) – Site in which to simulate movement.</li>
+<li><strong>steps</strong> (<em>int</em>) – Number of steps to simulate.</li>
+<li><strong>velocity</strong> (<em>int</em>) – Mean velocity of individuals.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>array</strong> – Array of shape [num, steps, 2], so if (x, y) = Array[i, j, :] then
+x and y are the coordinates of the i-th individual at step j in the
+simulation. Number of steps is determined by number of days and
+steps per day parameter.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">array</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../main.html">Model Libraries</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../movement_models.html">Movement Models Library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_analyzers.html">Movement Analyzers Library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../occupancy.html">Occupancy Estimation Models Library</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../main.html">Model Libraries</a><ul>
+  <li><a href="../movement_models.html">Movement Models Library</a><ul>
+      <li>Previous: <a href="constant_brownian.html" title="previous chapter">Constant Brownian Model</a></li>
+      <li>Next: <a href="gradient_brownian.html" title="next chapter">Gradient Brownian Model</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../../_sources/libraries/movement_models/gradient_levy.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

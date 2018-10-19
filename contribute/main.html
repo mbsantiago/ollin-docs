@@ -1,0 +1,196 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Contribute &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Add new Movement Models" href="movement_model.html" />
+    <link rel="prev" title="Calibration" href="../tutorials/calibration.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="contribute">
+<h1>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h1>
+<p>If you wish to contribute to Ollin’s project please do so! Just send a pull
+request in GitHub.</p>
+<p>Contribution can be done in different fronts. In what follows we specify guidelines and procedures
+to contribute to Ollin for each type of contribution.</p>
+<div class="section" id="general-contribution-procedure">
+<h2>General Contribution Procedure<a class="headerlink" href="#general-contribution-procedure" title="Permalink to this headline">¶</a></h2>
+<p>To contribute to Ollin, please fork the <a class="reference external" href="https://github.com/mbsantiago/ollin">repository</a> in GitHub, modify your fork
+and send a pull request. Additionally you can send an email to any of the
+maintainers with your contribution suggestions and code, although we generally
+prefer using the GitHub channel. Check this <a class="reference external" href="https://help.github.com/articles/creating-a-pull-request/">guide</a> on how to make pull requests.</p>
+</div>
+<div class="section" id="model-contribution">
+<h2>Model Contribution<a class="headerlink" href="#model-contribution" title="Permalink to this headline">¶</a></h2>
+<p>With Ollin, we wish to provide a unified package and platform for analysis of
+motion and its relations to occupancy and home range. To this end we designed
+Ollin to make it relatively easy to contribute to an ever growing
+library of movement and estimation models. If you wish to to add you models to
+Ollin, please select the corresponding section.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="movement_model.html">Add new Movement Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="movement_model.html#make-the-code">Make the code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="movement_model.html#efficiency-considerations">Efficiency Considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="movement_model.html#calibration">Calibration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="movement_model.html#add-file-to-models-library">Add file to models library</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="estimation.html">Add new Estimation Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="estimation.html#make-the-code">Make the code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="estimation.html#select-the-correct-return-class">Select the correct return class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="estimation.html#write-a-statistical-model-with-stan">Write a statistical model with Stan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="estimation.html#add-file-to-estimation-library">Add file to estimation library</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>Although code contribution requires some knowledge of python, we
+encourage those without the technical background to reach out to the maintainers
+with your ideas for new models.</p>
+</div>
+<div class="section" id="documentation-contribution">
+<h2>Documentation Contribution<a class="headerlink" href="#documentation-contribution" title="Permalink to this headline">¶</a></h2>
+<p>The documentation for Ollin is in its infancy and we wish to keep improving it.
+You can help us modifying the docstrings in the code base, or editing the
+documentation files.</p>
+<p>The documentation files are contained in the <code class="docutils literal notranslate"><span class="pre">docs/</span></code> directory of the code
+base. They are written in <a class="reference external" href="http://docutils.sourceforge.net/rst.html">reStructuredText</a> and are built with <a class="reference external" href="http://www.sphinx-doc.org/en/master/">sphinx</a>.</p>
+<p>For docstrings we follow the <code class="docutils literal notranslate"><span class="pre">numpydoc</span></code> style, so please check <a class="reference external" href="https://www.numpy.org/devdocs/docs/howto_document.html">this</a> guide
+on writing documentation.</p>
+</div>
+<div class="section" id="feature-suggestion">
+<h2>Feature suggestion<a class="headerlink" href="#feature-suggestion" title="Permalink to this headline">¶</a></h2>
+<p>To suggest new features please open an issue in the github repository or send a
+message to any of the maintainers.</p>
+</div>
+<div class="section" id="bug-reports">
+<h2>Bug Reports<a class="headerlink" href="#bug-reports" title="Permalink to this headline">¶</a></h2>
+<p>If you’ve found a bug, please let us know! Before sending a report please check
+GitHub <a class="reference external" href="https://github.com/mbsantiago/ollin/issues">issues</a> to see if your bug hasn’t been filed before. If no duplication
+is in sight, please open a new issue in GitHub or send a message to one of the
+maintainers.</p>
+</div>
+<div class="section" id="mantainers">
+<h2>Mantainers<a class="headerlink" href="#mantainers" title="Permalink to this headline">¶</a></h2>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Santiago Martínez:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><a class="reference external" href="mailto:santiago&#46;mbal&#37;&#52;&#48;gmail&#46;com">santiago<span>&#46;</span>mbal<span>&#64;</span>gmail<span>&#46;</span>com</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Everardo Robredo:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><a class="reference external" href="mailto:everardo&#46;robredo&#37;&#52;&#48;gmail&#46;com">everardo<span>&#46;</span>robredo<span>&#64;</span>gmail<span>&#46;</span>com</a></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contribute</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#general-contribution-procedure">General Contribution Procedure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model-contribution">Model Contribution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation-contribution">Documentation Contribution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#feature-suggestion">Feature suggestion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bug-reports">Bug Reports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mantainers">Mantainers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../tutorials/calibration.html" title="previous chapter">Calibration</a></li>
+      <li>Next: <a href="movement_model.html" title="next chapter">Add new Movement Models</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../_sources/contribute/main.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

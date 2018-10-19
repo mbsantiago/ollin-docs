@@ -1,0 +1,203 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ollin.estimation.estimation &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ollin.estimation.estimation</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module defining basic estimation interface and library tools.</span>
+
+<span class="sd">Passive detector data can be used to estimate ecological state variables. This</span>
+<span class="sd">module holds libraries of models used for estimation of these state variables.</span>
+
+<span class="sd">Currently only occupancy estimation models are available, but we expect to add</span>
+<span class="sd">more state variables in the near future.</span>
+
+<span class="sd">Notes</span>
+<span class="sd">-----</span>
+<span class="sd">All estimation models must inherit from :py:class:`EstimationModel` metaclass.</span>
+<span class="sd">Hence any estimation model must implement its</span>
+<span class="sd">:py:meth:`EstimationModel.estimate` method. Estimation models must return an</span>
+<span class="sd">:py:class:`Estimate` object. Estimate objects should specialize to whatever is</span>
+<span class="sd">being estimated, see</span>
+<span class="sd">:py:class:`.OccupancyEstimate` for an example.</span>
+
+<span class="sd">New estimation models must be placed within their corresponding directories.</span>
+<span class="sd">For example, any new occupancy estimation model should be placed in::</span>
+
+<span class="sd">    ollin/estimation/occupancy/</span>
+
+<span class="sd">Libraries of estimation models for other state variables can also be built</span>
+<span class="sd">following the same structure, say::</span>
+
+<span class="sd">    ollin/estimation/abundance/</span>
+
+<span class="sd">could contain abundance estimation models.</span>
+
+<span class="sd">Every estimation model must be contained in a new file, in its corresponding</span>
+<span class="sd">directory, so that :py:func:`get_estimation_model` and</span>
+<span class="sd">:py:func:`get_estimation_model_list` tools function correctly. These tools will</span>
+<span class="sd">look for files in these directories automatically and no further integration is</span>
+<span class="sd">needed.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">abstractmethod</span>
+
+
+<div class="viewcode-block" id="Estimate"><a class="viewcode-back" href="../../../api/estimation/estimation.html#ollin.estimation.estimation.Estimate">[docs]</a><span class="k">class</span> <span class="nc">Estimate</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Basic estimate class.</span>
+
+<span class="sd">    Any estimate result must hold, apart from the estimate, the original data</span>
+<span class="sd">    and the estimation model used.</span>
+
+<span class="sd">    This class is meant to serve as an interface for specialized estimates of</span>
+<span class="sd">    different state variables. Occupancy, abundance and other state variables</span>
+<span class="sd">    must have specialized Estimate classes.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : :py:obj:`EstimationModel`</span>
+<span class="sd">        Model used for estimation.</span>
+<span class="sd">    data : :py:obj:`.Detection`</span>
+<span class="sd">        Detection data used for estimation.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct Estimate object.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        model : :py:obj:`EstimationModel`</span>
+<span class="sd">            Model used for estimation.</span>
+<span class="sd">        data : :py:obj:`.Detection`</span>
+<span class="sd">            Detection data used for estimation.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="EstimationModel"><a class="viewcode-back" href="../../../api/estimation/estimation.html#ollin.estimation.estimation.EstimationModel">[docs]</a><span class="k">class</span> <span class="nc">EstimationModel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Basic estimation model class.</span>
+
+<span class="sd">    Any estimation model must subclass this class and define an estimate</span>
+<span class="sd">    method.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of estimation model.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="EstimationModel.estimate"><a class="viewcode-back" href="../../../api/estimation/estimation.html#ollin.estimation.estimation.EstimationModel.estimate">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detection</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make estimate using detection data.</span>
+
+<span class="sd">        Abstract method that must be overwritten by any estimation model. Its</span>
+<span class="sd">        argument must be a :py:obj:`.Detection` object, and</span>
+<span class="sd">        it must return a :py:obj:`Estimate`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../estimation.html">ollin.estimation</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

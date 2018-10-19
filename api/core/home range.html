@@ -1,0 +1,274 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Home Range Module &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Detection Module" href="detection.html" />
+    <link rel="prev" title="Movement Module" href="movement.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ollin.core.home_range">
+<span id="home-range-module"></span><h1>Home Range Module<a class="headerlink" href="#module-ollin.core.home_range" title="Permalink to this headline">¶</a></h1>
+<p>Module for Home Range calculation.</p>
+<p>Even though home range is a fuzzy concept with several competing definitions,
+and estimation methods, in the literature, in this package home range is
+defined as:</p>
+<blockquote>
+<div><strong>Area occupied by an individual in the course of some fixed time span.</strong></div></blockquote>
+<p>Home range calculation follows the next pipeline:</p>
+<ol class="arabic simple">
+<li>Inputs are Movement objects that contain position history of all
+simulated individuals for some number of steps</li>
+<li>Space is discretized using some resolution that only depends on the mean
+velocity of the simulation. See <a class="reference internal" href="utils.html#ollin.core.utils.home_range_resolution" title="ollin.core.utils.home_range_resolution"><code class="xref py py-func docutils literal notranslate"><span class="pre">home_range_resolution()</span></code></a> to see the
+functional relationship between mean velocity and space resolution</li>
+<li>For each individual, all pixels in discretized space occupied by the
+individual are counted, and an array with all presence-absence information
+is calculated</li>
+<li>Each individual is assigned the total area of discretized space occupied
+along its movement</li>
+</ol>
+<dl class="class">
+<dt id="ollin.core.home_range.HomeRange">
+<em class="property">class </em><code class="descclassname">ollin.core.home_range.</code><code class="descname">HomeRange</code><span class="sig-paren">(</span><em>movement</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/core/home_range.html#HomeRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.core.home_range.HomeRange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Home Range class for storing home range values.</p>
+<p>Movement data is processed into a grid of shape [num_individuals, x, y],
+where x and y are the sizes of discretized space and where:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">grid</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>means that the (x, y) pixel was occupied by the i-th individual.</p>
+<dl class="attribute">
+<dt id="ollin.core.home_range.HomeRange.movement">
+<code class="descname">movement</code><a class="headerlink" href="#ollin.core.home_range.HomeRange.movement" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="movement.html#ollin.core.movement.Movement" title="ollin.core.movement.Movement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Movement</span></code></a> – Underlying movement data.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.core.home_range.HomeRange.grid">
+<code class="descname">grid</code><a class="headerlink" href="#ollin.core.home_range.HomeRange.grid" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>array</em> – Array of shape [num_individuals, x, y] with presence-absence
+information.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.core.home_range.HomeRange.resolution">
+<code class="descname">resolution</code><a class="headerlink" href="#ollin.core.home_range.HomeRange.resolution" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – Spatial resolution for space discretization.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.core.home_range.HomeRange.home_ranges">
+<code class="descname">home_ranges</code><a class="headerlink" href="#ollin.core.home_range.HomeRange.home_ranges" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>array</em> – Array of shape [num_individuals] holding the home range in Km^2 for
+each individual.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.core.home_range.HomeRange.mean_home_range">
+<code class="descname">mean_home_range</code><a class="headerlink" href="#ollin.core.home_range.HomeRange.mean_home_range" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – Average home range.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.core.home_range.HomeRange.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>ax=None</em>, <em>figsize=(10</em>, <em>10)</em>, <em>include=None</em>, <em>n_individual=0</em>, <em>hr_cmap='Blues'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/core/home_range.html#HomeRange.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.core.home_range.HomeRange.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot home range.</p>
+<p>Plots all pixels occupied by an individual in discretized space.</p>
+<dl class="docutils">
+<dt>Home Range plotting adds the following optional components to the plot:</dt>
+<dd><ol class="first last arabic simple">
+<li><dl class="first docutils">
+<dt>“home_range:</dt>
+<dd>If present in include list, all pixels occupied by some subset
+of individuals will be colored. Diferent colors will be chosen
+for different individuals based on some colormap.</dd>
+</dl>
+</li>
+</ol>
+</dd>
+</dl>
+<p>All other components in the include list will be passed down to the
+Movement plotting method. See
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">Movement.plot()</span></code> for all plot
+components defined at that level.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ax</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code>, optional) – Axes object in which to plot detection information.</li>
+<li><strong>figsize</strong> (<em>list</em><em> or </em><em>tuple</em><em>, </em><em>optional</em>) – Size of figure to create if no axes object was given.</li>
+<li><strong>include</strong> (<em>list</em><em> or </em><em>tuple</em><em>, </em><em>optional</em>) – List of components to plot. Components list will be passed first
+to the Movement Data object to add the corresponding
+components. Then components corresponding to Movement
+included in the list will be plotted.</li>
+<li><strong>n_individual</strong> (<em>int</em><em> or </em><em>list</em><em> or </em><em>tuple</em><em> or </em><em>array</em><em> or </em><em>str</em><em>, </em><em>optional</em>) – If int will plot the home range of the corresponding individual.
+If it will plot the home range of all individuals in
+list/tuple/array. Otherwise it must be n_idividual=’all’, in which
+case it will plot all home ranges.</li>
+<li><strong>hr_cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Colormap to use for home ranges, see <code class="xref py py-mod docutils literal notranslate"><span class="pre">matplotlib.cm</span></code> to
+see all options. Defaults to ‘Blues’.</li>
+<li><strong>kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – All other keyworded arguments will be passed to the Movement
+plotting method.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>ax</strong> – Returns axes for further plotting.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="ollin.core.home_range.make_grid">
+<code class="descclassname">ollin.core.home_range.</code><code class="descname">make_grid</code><span class="sig-paren">(</span><em>array</em>, <em>range</em>, <em>resolution</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/core/home_range.html#make_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.core.home_range.make_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make and return presence absence grid in discretized space.</p>
+<p>Given an array of shape [num, steps, 2] which encodes individual positions
+at different time steps in a rectangular area of dimensions=range, and a
+resolution for space discretization, calculates an array of presence and
+absence data of shape [num, x, y], where:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">array</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>means that the i-th individual passed though the (x, y) pixel at some
+point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>array</strong> (<em>array</em>) – Array of shape [num, steps, 2] of individuals positions.</li>
+<li><strong>range</strong> (<em>tuple</em><em> or </em><em>list</em><em> or </em><em>array</em>) – Two dimensions of rectangular arena.</li>
+<li><strong>resolution</strong> (<em>float</em>) – Resolution of space discretization.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>grid</strong> – Array of shape [num, x, y] where x ~ range[0] / resolution and
+y ~ range[1] / resolution.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">array</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="core.html">Core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_models/movement models.html">Movement Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_analyzers/movement_analyzers.html">Movement Analyzers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../estimation/main.html">Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../calibration/calibration.html">Calibration</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+  <li><a href="core.html">Core</a><ul>
+      <li>Previous: <a href="movement.html" title="previous chapter">Movement Module</a></li>
+      <li>Next: <a href="detection.html" title="next chapter">Detection Module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../../_sources/api/core/home range.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

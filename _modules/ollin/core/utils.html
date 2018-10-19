@@ -1,0 +1,413 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ollin.core.utils &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ollin.core.utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Helper functions.&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="sigmoid"><a class="viewcode-back" href="../../../api/core/utils.html#ollin.core.utils.sigmoid">[docs]</a><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Sigmoid function.</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \sigma(x) = \frac{1}{1 + e^{-x}}</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="logit"><a class="viewcode-back" href="../../../api/core/utils.html#ollin.core.utils.logit">[docs]</a><span class="k">def</span> <span class="nf">logit</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Logit function.</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \mathop{logit}(y) = -log\left(\frac{1 - y}{y}\right)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="mi">1</span><span class="o">/</span><span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="occupancy_resolution"><a class="viewcode-back" href="../../../api/core/utils.html#ollin.core.utils.occupancy_resolution">[docs]</a><span class="k">def</span> <span class="nf">occupancy_resolution</span><span class="p">(</span><span class="n">home_range</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get discretization resolution from home range.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function is used throughout the package to select spatial resolution</span>
+<span class="sd">    of site discretization for all occupancy calculations. Such resolution is</span>
+<span class="sd">    dependant on home range information, and possibly some model parameters.</span>
+
+<span class="sd">    Currently, the relation assumed is</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        resolution = \sqrt{home\_range}</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    home_range : float</span>
+<span class="sd">    parameters : dict, optional</span>
+<span class="sd">        Possible parameters affecting the home_range -&gt; resolution relation.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    resolution: float</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">home_range</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="home_range_to_velocity"><a class="viewcode-back" href="../../../api/core/utils.html#ollin.core.utils.home_range_to_velocity">[docs]</a><span class="k">def</span> <span class="nf">home_range_to_velocity</span><span class="p">(</span><span class="n">home_range</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get mean velocity from home range information.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    This function is used throughout the package to translate home range</span>
+<span class="sd">    information to mean velocity. Each movement model produces a different</span>
+<span class="sd">    relation between home range and mean velocity, but a single model is</span>
+<span class="sd">    applied to all movement models. The general relationship assumed is:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        home\_range = \alpha \cdot velocity^{\beta}</span>
+
+<span class="sd">    Parameters are then fitted using simulated data.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    home_range : float</span>
+<span class="sd">    parameters : dict</span>
+<span class="sd">        The parameters dictionary must contain at two keys, &quot;exponent&quot; and</span>
+<span class="sd">        &quot;alpha&quot;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    velocity : float</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">exponent</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;exponent&#39;</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">home_range</span> <span class="o">/</span> <span class="n">alpha</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">exponent</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="velocity_to_home_range"><a class="viewcode-back" href="../../../api/core/utils.html#ollin.core.utils.velocity_to_home_range">[docs]</a><span class="k">def</span> <span class="nf">velocity_to_home_range</span><span class="p">(</span><span class="n">velocity</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get home range from mean velocity information.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function is used throughout the package to translate mean velocity</span>
+<span class="sd">    to home range information. Each movement model produces a different</span>
+<span class="sd">    relation between home range and mean velocity, but a single model is</span>
+<span class="sd">    applied to all movement models. The general relationship assumed is:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        home\_range = \alpha \cdot velocity^{\beta}</span>
+
+<span class="sd">    Parameters are then fitted using simulated data.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    velocity: float</span>
+<span class="sd">    parameters : dict</span>
+<span class="sd">        The parameters dictionary must contain at two keys, &quot;exponent&quot; and</span>
+<span class="sd">        &quot;alpha&quot;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    home_range : float</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">exponent</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;exponent&#39;</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">velocity</span><span class="o">**</span><span class="n">exponent</span></div>
+
+
+<div class="viewcode-block" id="occupancy_to_density"><a class="viewcode-back" href="../../../api/core/utils.html#ollin.core.utils.occupancy_to_density">[docs]</a><span class="k">def</span> <span class="nf">occupancy_to_density</span><span class="p">(</span>
+        <span class="n">occupancy</span><span class="p">,</span>
+        <span class="n">home_range_proportion</span><span class="p">,</span>
+        <span class="n">niche_size</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get estimated density from occupancy information.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function is used throughout the package to translate occupancy</span>
+<span class="sd">    to density information. This relation also depends on the size of</span>
+<span class="sd">    the home range in relation to the whole site&#39;s area, and to the proportion</span>
+<span class="sd">    of available adequate space, or size of true niche, see</span>
+<span class="sd">    :py:meth:`.BaseSite.get_niche_size`. Each movement model</span>
+<span class="sd">    produces a different relation between occupancy and density, but a single</span>
+<span class="sd">    model (or family of functions) is applied to all movement models. The</span>
+<span class="sd">    general relationship assumed is:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        logit(o) = \alpha+\beta_1 log(d)+\beta_2 log(ns)+\beta_3 log(hrp)</span>
+
+<span class="sd">    where :math:`o, d, ns, hrp` stand for occupancy, density, niche size and</span>
+<span class="sd">    home range proportion, and :math:`logit(x) = - log(-1 + 1/x)`.</span>
+<span class="sd">    Equivalently:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        o = \frac{\alpha \cdot d^{\beta_1} \cdot ns^{\beta_2} \cdot</span>
+<span class="sd">        hrp^{\beta_3}}{1 + \alpha \cdot d^{\beta_1} \cdot</span>
+<span class="sd">        ns^{\beta_2} \cdot hrp^{\beta_3}}</span>
+
+<span class="sd">    Parameters are then fitted using simulated data.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    occupancy: float</span>
+<span class="sd">    home_range_proportion : float</span>
+<span class="sd">        Number in [0, 1] range representing the proportion of home range area</span>
+<span class="sd">        to total area.</span>
+<span class="sd">    niche_size : float</span>
+<span class="sd">        Proportion of total area that is adequate for species.</span>
+<span class="sd">    parameters : dict</span>
+<span class="sd">        The parameters dictionary must contain four keys: &quot;alpha&quot;, &quot;hr_exp&quot;,</span>
+<span class="sd">        &quot;density_exp&quot; and &quot;niche_size_exp&quot;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    home_range : float</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span>
+    <span class="n">hr_exp</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;hr_exp&#39;</span><span class="p">]</span>
+    <span class="n">den_exp</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;density_exp&#39;</span><span class="p">]</span>
+    <span class="n">nsz_exp</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;niche_size_exp&#39;</span><span class="p">]</span>
+
+    <span class="n">density</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">logit</span><span class="p">(</span><span class="n">occupancy</span><span class="p">)</span> <span class="o">-</span>
+         <span class="n">alpha</span> <span class="o">-</span>
+         <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">home_range_proportion</span><span class="p">)</span> <span class="o">*</span> <span class="n">hr_exp</span> <span class="o">-</span>
+         <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">niche_size</span><span class="p">)</span> <span class="o">*</span> <span class="n">nsz_exp</span><span class="p">)</span> <span class="o">/</span> <span class="n">den_exp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">density</span></div>
+
+
+<div class="viewcode-block" id="density_to_occupancy"><a class="viewcode-back" href="../../../api/core/utils.html#ollin.core.utils.density_to_occupancy">[docs]</a><span class="k">def</span> <span class="nf">density_to_occupancy</span><span class="p">(</span>
+        <span class="n">density</span><span class="p">,</span>
+        <span class="n">home_range_proportion</span><span class="p">,</span>
+        <span class="n">niche_size</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get estimated occupancy from density information.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function is used throughout the package to translate density to</span>
+<span class="sd">    occupancy information. This relation also depends on the size of</span>
+<span class="sd">    the home range in relation to the whole site&#39;s area, and to the proportion</span>
+<span class="sd">    of available adequate space, or size of true niche, see</span>
+<span class="sd">    :py:meth:`.BaseSite.get_niche_size`. Each movement model</span>
+<span class="sd">    produces a different relation between occupancy and density, but a single</span>
+<span class="sd">    model (or family of functions) is applied to all movement models. The</span>
+<span class="sd">    general relationship assumed is:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        logit(o) = \alpha+\beta_1 log(d)+\beta_2 log(ns)+\beta_3 log(hrp)</span>
+
+<span class="sd">    where :math:`o, d, ns, hrp` stand for occupancy, density, niche size and</span>
+<span class="sd">    home range proportion, and :math:`logit(x) = - log(-1 + 1/x)`.</span>
+<span class="sd">    Equivalently:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        o = \frac{\alpha \cdot d^{\beta_1} \cdot ns^{\beta_2} \cdot</span>
+<span class="sd">                hrp^{\beta_3}}{1 + \alpha \cdot d^{\beta_1} \cdot</span>
+<span class="sd">                ns^{\beta_2} \cdot hrp^{\beta_3}}</span>
+
+<span class="sd">    Parameters are then fitted using simulated data.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    density : float</span>
+<span class="sd">    home_range_proportion : float</span>
+<span class="sd">        Number in [0, 1] range representing the proportion of home range area</span>
+<span class="sd">        to total area.</span>
+<span class="sd">    niche_size : float</span>
+<span class="sd">        Proportion of total area that is adequate for species.</span>
+<span class="sd">    parameters : dict</span>
+<span class="sd">        The parameters dictionary must contain four keys: &quot;alpha&quot;, &quot;hr_exp&quot;,</span>
+<span class="sd">        &quot;density_exp&quot; and &quot;niche_size_exp&quot;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    occupancy : float</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span>
+    <span class="n">hr_exp</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;hr_exp&#39;</span><span class="p">]</span>
+    <span class="n">den_exp</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;density_exp&#39;</span><span class="p">]</span>
+    <span class="n">nsz_exp</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;niche_size_exp&#39;</span><span class="p">]</span>
+
+    <span class="n">occupancy</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span>
+        <span class="n">alpha</span> <span class="o">+</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">density</span><span class="p">)</span> <span class="o">*</span> <span class="n">den_exp</span> <span class="o">+</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">home_range_proportion</span><span class="p">)</span> <span class="o">*</span> <span class="n">hr_exp</span> <span class="o">+</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">niche_size</span><span class="p">)</span> <span class="o">*</span> <span class="n">nsz_exp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">occupancy</span></div>
+
+
+<div class="viewcode-block" id="home_range_resolution"><a class="viewcode-back" href="../../../api/core/utils.html#ollin.core.utils.home_range_resolution">[docs]</a><span class="k">def</span> <span class="nf">home_range_resolution</span><span class="p">(</span><span class="n">velocity</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get discretization resolution from mean velocity.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function is used throughout the package to select spatial resolution</span>
+<span class="sd">    of site discretization for all home range calculations. Such resolution is</span>
+<span class="sd">    dependant on mean velocity information, and possibly other model</span>
+<span class="sd">    parameters.</span>
+
+<span class="sd">    Currently, the relation assumed is</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        resolution = velocity</span>
+
+<span class="sd">    More complicated relations might be used in the future.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    velocity : float</span>
+<span class="sd">    parameters : dict, optional</span>
+<span class="sd">        Possible parameters affecting the velocity -&gt; resolution relation.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    resolution: float</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">velocity</span></div>
+
+
+<div class="viewcode-block" id="velocity_modification"><a class="viewcode-back" href="../../../api/core/utils.html#ollin.core.utils.velocity_modification">[docs]</a><span class="k">def</span> <span class="nf">velocity_modification</span><span class="p">(</span><span class="n">niche_size</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get velocity modification at niche size.</span>
+
+<span class="sd">    Although for many movement models steps sizes are typically drawn</span>
+<span class="sd">    from a distribution with a known mean, so that mean velocity can</span>
+<span class="sd">    be controlled, some models include niche information in step size</span>
+<span class="sd">    selection which could possible perturb mean step size. Therefore velocity</span>
+<span class="sd">    correction is necessary.</span>
+
+<span class="sd">    The correction depends on the overall niche size, which is the proportion</span>
+<span class="sd">    of total area with an adequate level of niche value (see</span>
+<span class="sd">    :py:meth:`.BaseSite.get_niche_size`) and also on the</span>
+<span class="sd">    movement model used.</span>
+
+<span class="sd">    Based on simulated data, the correct parameters for velocity correction can</span>
+<span class="sd">    be obtained. See :py:mod:`.calibration`.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    niche_size : float</span>
+<span class="sd">    parameters : dict</span>
+<span class="sd">        Dictionary holding the movement model parameters for velocity</span>
+<span class="sd">        correction.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;velocity&#39;</span><span class="p">][</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;velocity&#39;</span><span class="p">][</span><span class="s1">&#39;beta&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">beta</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">niche_size</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

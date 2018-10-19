@@ -1,0 +1,533 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ollin.calibration.occupancy &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ollin.calibration.occupancy</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Pool</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="k">import</span> <span class="nb">range</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">ollin</span>
+
+<span class="kn">from</span> <span class="nn">..core.utils</span> <span class="k">import</span> <span class="n">density_to_occupancy</span><span class="p">,</span> <span class="n">logit</span>
+<span class="kn">from</span> <span class="nn">.config</span> <span class="k">import</span> <span class="n">BASE_CONFIG</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="OccupancyCalibrator"><a class="viewcode-back" href="../../../api/calibration/calibrators.html#ollin.calibration.occupancy.OccupancyCalibrator">[docs]</a><span class="k">class</span> <span class="nc">OccupancyCalibrator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class to calibrate Occupancy parameters.</span>
+
+<span class="sd">    This class also holds all data generated in calibration simulations.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : :py:obj:`dict`</span>
+<span class="sd">        Dictionary holding all configuration settings. See :py:mod:`.config` to</span>
+<span class="sd">        see all relevant settings.</span>
+<span class="sd">    movement_model : :py:obj:`.MovementModel`</span>
+<span class="sd">        Reference to Movement model instance being calibrated.</span>
+<span class="sd">    occupancy_info : :py:obj:`array`</span>
+<span class="sd">        Numpy array of size::</span>
+
+<span class="sd">            [num_home_ranges, num_niches, num_nums, num_worlds, trials]</span>
+
+<span class="sd">        containing occupancy information. Here:</span>
+
+<span class="sd">        :num_home_ranges:</span>
+<span class="sd">            Refers to the number of simulated home ranges held in the</span>
+<span class="sd">            configuration array ``config[&#39;home_ranges&#39;]``.</span>
+<span class="sd">        :num_niches:</span>
+<span class="sd">            Refers to the number of simulated niche sizes held in the</span>
+<span class="sd">            configuration array ``config[&#39;niche_sizes&#39;]``.</span>
+<span class="sd">        :num_nums:</span>
+<span class="sd">            Refers to the number of different number of individuals</span>
+<span class="sd">            simulated which are held in the configuration array</span>
+<span class="sd">            ``config[&#39;nums`]``.</span>
+<span class="sd">        :num_worlds:</span>
+<span class="sd">            Refers to the number of sites created per selection of</span>
+<span class="sd">            ``(home_range, niche_size)``.</span>
+<span class="sd">        :trials:</span>
+<span class="sd">            Refers to the number of simulations made per site.</span>
+
+<span class="sd">        Hence if::</span>
+
+<span class="sd">            oc = occupancy_info[i, j, k, l, m]</span>
+
+<span class="sd">        this means that ``oc`` was the occupancy generated by</span>
+<span class="sd">        ``config[&#39;nums&#39;][k]`` individuals, randomly selected from the</span>
+<span class="sd">        the m-th simulation at the l-th world generated with niche size</span>
+<span class="sd">        ``config[&#39;niche_sizes&#39;][j]`` and home range</span>
+<span class="sd">        ``config[&#39;home_ranges&#39;][k]``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">movement_model</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Handle configurations</span>
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="n">BASE_CONFIG</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">copy</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">copy</span>
+
+        <span class="c1"># Point to movement model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span> <span class="o">=</span> <span class="n">movement_model</span>
+
+        <span class="c1"># Calculate calibrations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">occupancy_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_oc_info</span><span class="p">()</span>
+
+<div class="viewcode-block" id="OccupancyCalibrator.calculate_oc_info"><a class="viewcode-back" href="../../../api/calibration/calibrators.html#ollin.calibration.occupancy.OccupancyCalibrator.calculate_oc_info">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_oc_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Simulate multiple scenarios in parallel and record occupancy.&quot;&quot;&quot;</span>
+        <span class="n">trials_per_world</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;trials_per_world&#39;</span><span class="p">]</span>
+        <span class="n">max_individuals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;max_individuals&#39;</span><span class="p">]</span>
+        <span class="n">niche_sizes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;niche_sizes&#39;</span><span class="p">]</span>
+        <span class="n">home_ranges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;home_ranges&#39;</span><span class="p">]</span>
+        <span class="n">num_worlds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;num_worlds&#39;</span><span class="p">]</span>
+        <span class="n">individuals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;nums&#39;</span><span class="p">]</span>
+        <span class="n">season</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;season&#39;</span><span class="p">]</span>
+        <span class="n">range_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">]</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span>
+
+        <span class="n">num_niches</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">niche_sizes</span><span class="p">)</span>
+        <span class="n">num_home_ranges</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">home_ranges</span><span class="p">)</span>
+        <span class="n">num_densities</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">individuals</span><span class="p">)</span>
+
+        <span class="n">all_info</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span>
+            <span class="n">num_home_ranges</span><span class="p">,</span>
+            <span class="n">num_niches</span><span class="p">,</span>
+            <span class="n">num_densities</span><span class="p">,</span>
+            <span class="n">num_worlds</span><span class="p">,</span>
+            <span class="n">trials_per_world</span><span class="p">])</span>
+        <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">home_range</span><span class="p">,</span> <span class="n">niche_size</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">home_range</span> <span class="ow">in</span> <span class="n">home_ranges</span>
+            <span class="k">for</span> <span class="n">niche_size</span> <span class="ow">in</span> <span class="n">niche_sizes</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_worlds</span><span class="p">)]</span>
+
+        <span class="n">n_args</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
+        <span class="n">n_individuals</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">num_home_ranges</span> <span class="o">*</span> <span class="n">num_niches</span> <span class="o">*</span>
+            <span class="n">trials_per_world</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">individuals</span><span class="p">))</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Making </span><span class="si">{}</span><span class="s1"> runs of the simulator&#39;</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n\t</span><span class="s1">Simulating a total of </span><span class="si">{}</span><span class="s1"> individuals&#39;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n_args</span><span class="p">,</span> <span class="n">n_individuals</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map_async</span><span class="p">(</span>
+                <span class="n">partial</span><span class="p">(</span>
+                    <span class="n">_get_single_oc_info</span><span class="p">,</span>
+                    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+                    <span class="n">range_</span><span class="o">=</span><span class="n">range_</span><span class="p">,</span>
+                    <span class="n">season</span><span class="o">=</span><span class="n">season</span><span class="p">,</span>
+                    <span class="n">trials</span><span class="o">=</span><span class="n">trials_per_world</span><span class="p">,</span>
+                    <span class="n">max_individuals</span><span class="o">=</span><span class="n">max_individuals</span><span class="p">,</span>
+                    <span class="n">nums</span><span class="o">=</span><span class="n">individuals</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">arguments</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">99999999999999</span><span class="p">)</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">KeyboardInterrupt</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Simulations done.&#39;</span><span class="p">)</span>
+
+        <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">num_home_ranges</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">num_niches</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">num_worlds</span><span class="p">)]</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">),</span> <span class="n">res</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">arguments</span><span class="p">,</span> <span class="n">results</span><span class="p">):</span>
+            <span class="n">all_info</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:,</span> <span class="n">k</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">res</span>
+
+        <span class="k">return</span> <span class="n">all_info</span></div>
+
+<div class="viewcode-block" id="OccupancyCalibrator.plot"><a class="viewcode-back" href="../../../api/calibration/calibrators.html#ollin.calibration.occupancy.OccupancyCalibrator.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+            <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">x_var</span><span class="o">=</span><span class="s1">&#39;density&#39;</span><span class="p">,</span>
+            <span class="n">w_target</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">xscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">yscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">lwidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+            <span class="n">wtext</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot graph of generated occupancy data and fit.</span>
+
+<span class="sd">        Plots a grid of graphs of the relation between population density</span>
+<span class="sd">        and resulting simulated occupancy. Adds a fitted line to the plot if</span>
+<span class="sd">        desired to visually check calibration.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`, optional</span>
+<span class="sd">            Ax in which to draw the plot. If not given a new one will be</span>
+<span class="sd">            created.</span>
+<span class="sd">        fisize : :py:obj:`tuple`, optional</span>
+<span class="sd">            Size of figure to create. Used only if no ax is given.</span>
+<span class="sd">        x_var : :py:obj:`str`, optional</span>
+<span class="sd">            Variable to use in the x-axis. Options are: &#39;density&#39;,</span>
+<span class="sd">            &#39;home_range&#39;, &#39;niche_sizes&#39;. Defaults to &#39;density&#39;.</span>
+<span class="sd">        w_target : :py:obj:`bool`, optional</span>
+<span class="sd">            If True will plot a line fitted to velocity data. Defaults to True.</span>
+<span class="sd">        xscale : :py:obj:`str`, optional</span>
+<span class="sd">            Scale to use in the x-axis. Options are: &#39;linear&#39;, &#39;log&#39;. Defaults</span>
+<span class="sd">            to &#39;linear&#39;.</span>
+<span class="sd">        yscale : :py:obj:`str`, optional</span>
+<span class="sd">            Scale to use in the y-axis. Options are: &#39;linear&#39;, &#39;log&#39;, &#39;logit&#39;.</span>
+<span class="sd">            Defaults to &#39;linear&#39;.</span>
+<span class="sd">        lwidth : :py:obj:`str`, optional</span>
+<span class="sd">            Width of fitted line. Defaults to 0.1.</span>
+<span class="sd">        wtext : :py:obj:`bool`, optional</span>
+<span class="sd">            If True will add a text description to each plot, specifying the</span>
+<span class="sd">            niche size and home_range.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : :py:obj:`matplotlib.axes.Axes`</span>
+<span class="sd">            Ax object for further plotting.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="k">import</span> <span class="n">NullFormatter</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+
+        <span class="n">home_ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;home_ranges&#39;</span><span class="p">])</span>
+        <span class="n">niche_sizes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;niche_sizes&#39;</span><span class="p">])</span>
+        <span class="n">nums</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;nums&#39;</span><span class="p">])</span>
+        <span class="n">range_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">]</span>
+
+        <span class="n">area</span> <span class="o">=</span> <span class="n">range_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">range_</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">nums</span> <span class="o">/</span> <span class="n">area</span>
+        <span class="n">hr_proportions</span> <span class="o">=</span> <span class="n">home_ranges</span> <span class="o">/</span> <span class="n">area</span>
+
+        <span class="k">if</span> <span class="n">x_var</span> <span class="o">==</span> <span class="s1">&#39;density&#39;</span><span class="p">:</span>
+            <span class="n">iterator1</span> <span class="o">=</span> <span class="n">hr_proportions</span>
+            <span class="n">var2</span> <span class="o">=</span> <span class="s1">&#39;HRP&#39;</span>
+            <span class="n">iterator2</span> <span class="o">=</span> <span class="n">niche_sizes</span>
+            <span class="n">var3</span> <span class="o">=</span> <span class="s1">&#39;NS&#39;</span>
+        <span class="k">elif</span> <span class="n">x_var</span> <span class="o">==</span> <span class="s1">&#39;home_range&#39;</span><span class="p">:</span>
+            <span class="n">iterator1</span> <span class="o">=</span> <span class="n">density</span>
+            <span class="n">var2</span> <span class="o">=</span> <span class="s1">&#39;D&#39;</span>
+            <span class="n">iterator2</span> <span class="o">=</span> <span class="n">niche_sizes</span>
+            <span class="n">var3</span> <span class="o">=</span> <span class="s1">&#39;NS&#39;</span>
+        <span class="k">elif</span> <span class="n">x_var</span> <span class="o">==</span> <span class="s1">&#39;niche_sizes&#39;</span><span class="p">:</span>
+            <span class="n">iterator1</span> <span class="o">=</span> <span class="n">hr_proportions</span>
+            <span class="n">var2</span> <span class="o">=</span> <span class="s1">&#39;HRP&#39;</span>
+            <span class="n">iterator2</span> <span class="o">=</span> <span class="n">density</span>
+            <span class="n">var3</span> <span class="o">=</span> <span class="s1">&#39;D&#39;</span>
+
+        <span class="n">ncols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">iterator1</span><span class="p">)</span>
+        <span class="n">nrows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">iterator2</span><span class="p">)</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;density&#39;</span><span class="p">]</span>
+
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iterator1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iterator2</span><span class="p">):</span>
+                <span class="n">nax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">counter</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">x_var</span> <span class="o">==</span> <span class="s1">&#39;density&#39;</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">occupancy_info</span><span class="p">[</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span>
+                    <span class="n">xcoords</span> <span class="o">=</span> <span class="n">density</span>
+
+                <span class="k">elif</span> <span class="n">x_var</span> <span class="o">==</span> <span class="s1">&#39;home_range&#39;</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">occupancy_info</span><span class="p">[:,</span> <span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                    <span class="n">xcoords</span> <span class="o">=</span> <span class="n">hr_proportions</span>
+
+                <span class="k">elif</span> <span class="n">x_var</span> <span class="o">==</span> <span class="s1">&#39;niche_sizes&#39;</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">occupancy_info</span><span class="p">[</span><span class="n">m</span><span class="p">,</span> <span class="p">:,</span> <span class="n">n</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                    <span class="n">xcoords</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">niche_sizes</span>
+
+                <span class="n">mean</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+                <span class="n">std</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+                <span class="n">uplim</span> <span class="o">=</span> <span class="n">mean</span> <span class="o">+</span> <span class="n">std</span>
+                <span class="n">dnlim</span> <span class="o">=</span> <span class="n">mean</span> <span class="o">-</span> <span class="n">std</span>
+
+                <span class="n">xtext</span> <span class="o">=</span> <span class="mf">0.1</span>
+                <span class="n">ytext</span> <span class="o">=</span> <span class="mf">0.8</span>
+
+                <span class="n">ylim0</span><span class="p">,</span> <span class="n">ylim1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.1</span>
+
+                <span class="k">if</span> <span class="n">xscale</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
+                    <span class="n">xcoords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">xcoords</span><span class="p">)</span>
+                    <span class="n">xtext</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">xtext</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">yscale</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
+                    <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span>
+                    <span class="n">uplim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">uplim</span><span class="p">)</span>
+                    <span class="n">dnlim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">dnlim</span><span class="p">)</span>
+                    <span class="n">ylim0</span> <span class="o">=</span> <span class="o">-</span><span class="mi">6</span>
+                    <span class="n">ylim1</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">ytext</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ytext</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">yscale</span> <span class="o">==</span> <span class="s1">&#39;logit&#39;</span><span class="p">:</span>
+                    <span class="n">mean</span> <span class="o">=</span> <span class="n">logit</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span>
+                    <span class="n">uplim</span> <span class="o">=</span> <span class="n">logit</span><span class="p">(</span><span class="n">uplim</span><span class="p">)</span>
+                    <span class="n">dnlim</span> <span class="o">=</span> <span class="n">logit</span><span class="p">(</span><span class="n">dnlim</span><span class="p">)</span>
+                    <span class="n">ylim0</span> <span class="o">=</span> <span class="o">-</span><span class="mi">6</span>
+                    <span class="n">ylim1</span> <span class="o">=</span> <span class="mi">4</span>
+                    <span class="n">ytext</span> <span class="o">=</span> <span class="n">logit</span><span class="p">(</span><span class="n">ytext</span><span class="p">)</span>
+
+                <span class="n">nax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                    <span class="n">xcoords</span><span class="p">,</span>
+                    <span class="n">mean</span><span class="p">,</span>
+                    <span class="n">linewidth</span><span class="o">=</span><span class="n">lwidth</span><span class="p">)</span>
+                <span class="n">nax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+                    <span class="n">xcoords</span><span class="p">,</span>
+                    <span class="n">dnlim</span><span class="p">,</span>
+                    <span class="n">uplim</span><span class="p">,</span>
+                    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+                    <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">w_target</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">x_var</span> <span class="o">==</span> <span class="s1">&#39;density&#39;</span><span class="p">:</span>
+                        <span class="n">target</span> <span class="o">=</span> <span class="n">density_to_occupancy</span><span class="p">(</span>
+                            <span class="n">density</span><span class="p">,</span>
+                            <span class="n">x</span><span class="p">,</span>
+                            <span class="n">y</span><span class="p">,</span>
+                            <span class="n">parameters</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">x_var</span> <span class="o">==</span> <span class="s1">&#39;home_range&#39;</span><span class="p">:</span>
+                        <span class="n">target</span> <span class="o">=</span> <span class="n">density_to_occupancy</span><span class="p">(</span>
+                            <span class="n">x</span><span class="p">,</span>
+                            <span class="n">hr_proportions</span><span class="p">,</span>
+                            <span class="n">y</span><span class="p">,</span>
+                            <span class="n">parameters</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">x_var</span> <span class="o">==</span> <span class="s1">&#39;niche_sizes&#39;</span><span class="p">:</span>
+                        <span class="n">target</span> <span class="o">=</span> <span class="n">density_to_occupancy</span><span class="p">(</span>
+                            <span class="n">y</span><span class="p">,</span>
+                            <span class="n">x</span><span class="p">,</span>
+                            <span class="n">niche_sizes</span><span class="p">,</span>
+                            <span class="n">parameters</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">yscale</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
+                        <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">yscale</span> <span class="o">==</span> <span class="s1">&#39;logit&#39;</span><span class="p">:</span>
+                        <span class="n">target</span> <span class="o">=</span> <span class="n">logit</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+
+                    <span class="n">nax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                        <span class="n">xcoords</span><span class="p">,</span>
+                        <span class="n">target</span><span class="p">,</span>
+                        <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span>
+                        <span class="n">label</span><span class="o">=</span><span class="s1">&#39;target&#39;</span><span class="p">)</span>
+
+                <span class="n">nax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim0</span><span class="p">,</span> <span class="n">ylim1</span><span class="p">)</span>
+                <span class="n">nax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xcoords</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">xcoords</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+
+                <span class="k">if</span> <span class="n">wtext</span><span class="p">:</span>
+                    <span class="n">nax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+                        <span class="n">xtext</span><span class="p">,</span> <span class="n">ytext</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">=</span><span class="si">{}</span><span class="se">\n</span><span class="si">{}</span><span class="s1">=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var2</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">var3</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="n">m</span> <span class="o">==</span> <span class="n">ncols</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">nax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var3</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">nax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var2</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="n">m</span> <span class="o">&lt;</span> <span class="n">ncols</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">nax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">NullFormatter</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">nax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">NullFormatter</span><span class="p">())</span>
+
+                <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">wspace</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">font</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;fontsize&#39;</span><span class="p">:</span> <span class="mi">18</span><span class="p">}</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figtext</span><span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.035</span><span class="p">,</span> <span class="n">x_var</span><span class="p">,</span> <span class="n">fontdict</span><span class="o">=</span><span class="n">font</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figtext</span><span class="p">(</span><span class="mf">0.035</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;Occupancy (%)&quot;</span><span class="p">,</span> <span class="n">fontdict</span><span class="o">=</span><span class="n">font</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Occupancy Calibration</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">title</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">movement_model</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figtext</span><span class="p">(</span><span class="mf">0.38</span><span class="p">,</span> <span class="mf">0.92</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">fontdict</span><span class="o">=</span><span class="n">font</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="OccupancyCalibrator.fit"><a class="viewcode-back" href="../../../api/calibration/calibrators.html#ollin.calibration.occupancy.OccupancyCalibrator.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fit model parameters to simulated occupancy data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        fit : :py:obj:`dict`</span>
+<span class="sd">            Dictionary holding the fitted parameters.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="k">import</span> <span class="n">LinearRegression</span>
+        <span class="n">home_ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;home_ranges&#39;</span><span class="p">])</span>
+        <span class="n">niche_sizes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;niche_sizes&#39;</span><span class="p">])</span>
+        <span class="n">nums</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;nums&#39;</span><span class="p">])</span>
+        <span class="n">range_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">]</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">occupancy_info</span>
+        <span class="n">area</span> <span class="o">=</span> <span class="n">range_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">range_</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">nums</span> <span class="o">/</span> <span class="n">area</span>
+        <span class="n">hr_proportions</span> <span class="o">=</span> <span class="n">home_ranges</span> <span class="o">/</span> <span class="n">area</span>
+
+        <span class="n">X</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">nsz</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">niche_sizes</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">hr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">hr_proportions</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">dens</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">density</span><span class="p">):</span>
+                    <span class="n">oc_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+                    <span class="n">hr_data</span> <span class="o">=</span> <span class="n">hr</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">oc_data</span><span class="p">)</span>
+                    <span class="n">dens_data</span> <span class="o">=</span> <span class="n">dens</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">oc_data</span><span class="p">)</span>
+                    <span class="n">nsz_data</span> <span class="o">=</span> <span class="n">nsz</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">oc_data</span><span class="p">)</span>
+                    <span class="n">Y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">logit</span><span class="p">(</span><span class="n">oc_data</span><span class="p">))</span>
+                    <span class="n">X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">hr_data</span><span class="p">),</span>
+                                  <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">dens_data</span><span class="p">),</span>
+                                  <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">nsz_data</span><span class="p">)],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">lrm</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">()</span>
+        <span class="n">lrm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">lrm</span><span class="o">.</span><span class="n">intercept_</span>
+        <span class="n">hr_exp</span> <span class="o">=</span> <span class="n">lrm</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">den_exp</span> <span class="o">=</span> <span class="n">lrm</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">nsz_exp</span> <span class="o">=</span> <span class="n">lrm</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span>
+            <span class="s1">&#39;hr_exp&#39;</span><span class="p">:</span> <span class="n">hr_exp</span><span class="p">,</span>
+            <span class="s1">&#39;density_exp&#39;</span><span class="p">:</span> <span class="n">den_exp</span><span class="p">,</span>
+            <span class="s1">&#39;niche_size_exp&#39;</span><span class="p">:</span> <span class="n">nsz_exp</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">parameters</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">_get_single_oc_info</span><span class="p">(</span>
+        <span class="n">args</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">range_</span><span class="p">,</span>
+        <span class="n">season</span><span class="p">,</span>
+        <span class="n">trials</span><span class="p">,</span>
+        <span class="n">max_individuals</span><span class="p">,</span>
+        <span class="n">nums</span><span class="p">):</span>
+    <span class="n">home_range</span><span class="p">,</span> <span class="n">niche_size</span> <span class="o">=</span> <span class="n">args</span>
+
+    <span class="n">site</span> <span class="o">=</span> <span class="n">ollin</span><span class="o">.</span><span class="n">Site</span><span class="o">.</span><span class="n">make_random</span><span class="p">(</span><span class="n">niche_size</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="n">range_</span><span class="p">)</span>
+    <span class="n">mov</span> <span class="o">=</span> <span class="n">ollin</span><span class="o">.</span><span class="n">Movement</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+        <span class="n">site</span><span class="p">,</span>
+        <span class="n">num</span><span class="o">=</span><span class="n">max_individuals</span><span class="p">,</span>
+        <span class="n">home_range</span><span class="o">=</span><span class="n">home_range</span><span class="p">,</span>
+        <span class="n">days</span><span class="o">=</span><span class="n">season</span><span class="p">,</span>
+        <span class="n">movement_model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+
+    <span class="n">n_nums</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_nums</span><span class="p">,</span> <span class="n">trials</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">num</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">nums</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">trials</span><span class="p">):</span>
+            <span class="n">submov</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+            <span class="n">oc</span> <span class="o">=</span> <span class="n">ollin</span><span class="o">.</span><span class="n">Occupancy</span><span class="p">(</span><span class="n">submov</span><span class="p">)</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">oc</span><span class="o">.</span><span class="n">occupancy</span>
+
+    <span class="k">return</span> <span class="n">results</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,156 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Naive Occupancy Estimator &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Voronoi Areas Method" href="voronoi_areas.html" />
+    <link rel="prev" title="McKenzie Single Species - Single Season" href="single_species.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ollin.estimation.occupancy.naive">
+<span id="naive-occupancy-estimator"></span><h1>Naive Occupancy Estimator<a class="headerlink" href="#module-ollin.estimation.occupancy.naive" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="ollin.estimation.occupancy.naive.Model">
+<em class="property">class </em><code class="descclassname">ollin.estimation.occupancy.naive.</code><code class="descname">Model</code><a class="reference internal" href="../../_modules/ollin/estimation/occupancy/naive.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.occupancy.naive.Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Naive Occupancy Estimator.</p>
+<p>The naive model uses the percentage of cameras with some detection to
+estimate occupancy. Detectability is then defined as the mean proportion
+of detection at cameras with some detection.</p>
+<p>Hence if detection data is:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}D = \left(d_{ij}\right)_{\substack{1 \leq i \leq N \\ 1 \leq j \leq M}}\end{split}\]</div>
+<p>Where:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}d_{ij} = \begin{cases}
+    1 &amp; \text{Camera } i \text{ made a detection at step } j \\
+    0 &amp; \text{Otherwise}
+\end{cases}\end{split}\]</div>
+<p>Then, if <span class="math notranslate nohighlight">\(\hat{o_{}}\)</span> and <span class="math notranslate nohighlight">\(\hat{d_{}}\)</span> is detectability:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{align}
+    \hat{o_i} &amp; = \max\{d_{ij} \mid 1 \leq j \leq M\} \\
+    \hat{o_{}} &amp; = \frac{1}{N} \sum_{i = 1}^N \hat{d_i}
+\end{align}\end{split}\]</div>
+<p>And</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{align}
+    \hat{d_i} &amp;= \frac{1}{M} \sum_{j = 1}^M d_{ij} \\
+    \hat{d_{}} &amp;= \frac{\sum_{i=1}^N \hat{d_i}}{\sum_{i=1}^N \hat{o_i}}
+\end{align}\end{split}\]</div>
+<dl class="method">
+<dt id="ollin.estimation.occupancy.naive.Model.estimate">
+<code class="descname">estimate</code><span class="sig-paren">(</span><em>detection</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/estimation/occupancy/naive.html#Model.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.estimation.occupancy.naive.Model.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make estimation using detection data.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../main.html">Model Libraries</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../movement_models.html">Movement Models Library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_analyzers.html">Movement Analyzers Library</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../occupancy.html">Occupancy Estimation Models Library</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/api.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../main.html">Model Libraries</a><ul>
+  <li><a href="../occupancy.html">Occupancy Estimation Models Library</a><ul>
+      <li>Previous: <a href="single_species.html" title="previous chapter">McKenzie Single Species - Single Season</a></li>
+      <li>Next: <a href="voronoi_areas.html" title="next chapter">Voronoi Areas Method</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../../_sources/libraries/occupancy/naive.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

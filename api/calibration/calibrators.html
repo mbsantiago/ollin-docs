@@ -1,0 +1,460 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Calibrators &#8212; ollin 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Calibration Configuration" href="config.html" />
+    <link rel="prev" title="Calibration of Movement Models" href="calibrate.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ollin.calibration.velocity">
+<span id="calibrators"></span><h1>Calibrators<a class="headerlink" href="#module-ollin.calibration.velocity" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="ollin.calibration.velocity.VelocityCalibrator">
+<em class="property">class </em><code class="descclassname">ollin.calibration.velocity.</code><code class="descname">VelocityCalibrator</code><span class="sig-paren">(</span><em>movement_model</em>, <em>config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/velocity.html#VelocityCalibrator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.velocity.VelocityCalibrator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class to calibrate velocity parameters.</p>
+<p>This class also holds all data generated in calibration simulations.</p>
+<dl class="attribute">
+<dt id="ollin.calibration.velocity.VelocityCalibrator.config">
+<code class="descname">config</code><a class="headerlink" href="#ollin.calibration.velocity.VelocityCalibrator.config" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code> – Dictionary holding all configuration settings. See <a class="reference internal" href="config.html#module-ollin.calibration.config" title="ollin.calibration.config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">config</span></code></a> to
+see all relevant settings.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.calibration.velocity.VelocityCalibrator.movement_model">
+<code class="descname">movement_model</code><a class="headerlink" href="#ollin.calibration.velocity.VelocityCalibrator.movement_model" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="../movement_models/movement models.html#ollin.movement_models.base.MovementModel" title="ollin.movement_models.base.MovementModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MovementModel</span></code></a> – Reference to Movement model instance being calibrated.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.calibration.velocity.VelocityCalibrator.velocity_info">
+<code class="descname">velocity_info</code><a class="headerlink" href="#ollin.calibration.velocity.VelocityCalibrator.velocity_info" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">array</span></code> –</p>
+<p>Numpy array of size:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">num_velocities</span><span class="p">,</span> <span class="n">num_niches</span><span class="p">,</span> <span class="n">num_worlds</span><span class="p">,</span> <span class="n">trials_per_world</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>containing velocity information. Here:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Num_velocities:</th><td class="field-body">Refers to the number of simulated mean velocities held in the
+configuration array <code class="docutils literal notranslate"><span class="pre">config['velocities']</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Num_niches:</th><td class="field-body">Refers to the number of simulated niche sizes held in the
+configuration array <code class="docutils literal notranslate"><span class="pre">config['niche_sizes']</span></code>.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Num_worlds:</th><td class="field-body">Refers to the number of sites created per selection of
+<code class="docutils literal notranslate"><span class="pre">(velocity,</span> <span class="pre">niche_size)</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Trials_per_world:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">Refers to the number of simulations made per site.</td>
+</tr>
+</tbody>
+</table>
+<p>Hence if:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">vel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity_info</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>this means that <code class="docutils literal notranslate"><span class="pre">vel</span></code> was the mean velocity in the l-th simulation at
+the k-th world generated with niche size <code class="docutils literal notranslate"><span class="pre">config['niche_sizes'][j]</span></code>
+and “model”-mean velocity <code class="docutils literal notranslate"><span class="pre">config['velocities'][i]</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.calibration.velocity.VelocityCalibrator.calculate_velocity_info">
+<code class="descname">calculate_velocity_info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/velocity.html#VelocityCalibrator.calculate_velocity_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.velocity.VelocityCalibrator.calculate_velocity_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate multiple scenarios in parallel and record mean velocity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.calibration.velocity.VelocityCalibrator.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/velocity.html#VelocityCalibrator.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.velocity.VelocityCalibrator.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit correction parameter to simulated velocity data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>fit</strong> – Dictionary holding the fitted parameters.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.calibration.velocity.VelocityCalibrator.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>cmap='Set2'</em>, <em>figsize=(10</em>, <em>10)</em>, <em>ax=None</em>, <em>plotfit=True</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/velocity.html#VelocityCalibrator.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.velocity.VelocityCalibrator.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot graph of generated velocity data and fit.</p>
+<p>Plots a graph of internal Model’s “mean-velocity” parameter versus
+resulting simulated mean velocity. Adds a fitted line to the plot if
+desired to visually check calibration.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cmap</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Name of colormap to use for diferent niche sizes.</li>
+<li><strong>ax</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code>, optional) – Ax in which to draw the plot. If not given a new one will be
+created.</li>
+<li><strong>fisize</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">tuple</span></code>, optional) – Size of figure to create. Used only if no ax is given.</li>
+<li><strong>plotfit</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True will plot a line fitted to velocity data. Defaults to True.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>ax</strong> – Ax object for further plotting.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-ollin.calibration.home_range"></span><dl class="class">
+<dt id="ollin.calibration.home_range.HomeRangeCalibrator">
+<em class="property">class </em><code class="descclassname">ollin.calibration.home_range.</code><code class="descname">HomeRangeCalibrator</code><span class="sig-paren">(</span><em>movement_model</em>, <em>config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/home_range.html#HomeRangeCalibrator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.home_range.HomeRangeCalibrator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class to calibrate Home Range parameters.</p>
+<p>This class also holds all data generated in calibration simulations.</p>
+<dl class="attribute">
+<dt id="ollin.calibration.home_range.HomeRangeCalibrator.config">
+<code class="descname">config</code><a class="headerlink" href="#ollin.calibration.home_range.HomeRangeCalibrator.config" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code> – Dictionary holding all configuration settings. See <a class="reference internal" href="config.html#module-ollin.calibration.config" title="ollin.calibration.config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">config</span></code></a> to
+see all relevant settings.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.calibration.home_range.HomeRangeCalibrator.movement_model">
+<code class="descname">movement_model</code><a class="headerlink" href="#ollin.calibration.home_range.HomeRangeCalibrator.movement_model" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="../movement_models/movement models.html#ollin.movement_models.base.MovementModel" title="ollin.movement_models.base.MovementModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MovementModel</span></code></a> – Reference to Movement model instance being calibrated.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.calibration.home_range.HomeRangeCalibrator.home_range_info">
+<code class="descname">home_range_info</code><a class="headerlink" href="#ollin.calibration.home_range.HomeRangeCalibrator.home_range_info" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">array</span></code> –</p>
+<p>Numpy array of size:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">num_velocities</span><span class="p">,</span> <span class="n">num_niches</span><span class="p">,</span> <span class="n">num_worlds</span><span class="p">,</span> <span class="n">trials</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>containing occupancy information. Here:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Num_velocities:</th><td class="field-body">Refers to the number of simulated mean velocities held in the
+configuration array <code class="docutils literal notranslate"><span class="pre">config['velocities']</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Num_niches:</th><td class="field-body">Refers to the number of simulated niche sizes held in the
+configuration array <code class="docutils literal notranslate"><span class="pre">config['niche_sizes']</span></code>.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Num_worlds:</th><td class="field-body">Refers to the number of sites created per selection of
+<code class="docutils literal notranslate"><span class="pre">(velocity,</span> <span class="pre">niche_size)</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Trials:</th><td class="field-body">Refers to the number of simulations made per site.</td>
+</tr>
+</tbody>
+</table>
+<p>Hence if:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hr</span> <span class="o">=</span> <span class="n">home_range_info</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>this means that <code class="docutils literal notranslate"><span class="pre">hr</span></code> was the mean home range in the l-th
+simulation at the k-th world generated with niche size
+<code class="docutils literal notranslate"><span class="pre">config['niche_sizes'][j]</span></code> and mean velocity
+<code class="docutils literal notranslate"><span class="pre">config['velocities'][i]</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.calibration.home_range.HomeRangeCalibrator.calculate_hr_info">
+<code class="descname">calculate_hr_info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/home_range.html#HomeRangeCalibrator.calculate_hr_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.home_range.HomeRangeCalibrator.calculate_hr_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate multiple scenarios in parallel and record mean home range.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.calibration.home_range.HomeRangeCalibrator.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/home_range.html#HomeRangeCalibrator.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.home_range.HomeRangeCalibrator.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit correction parameter to simulated home range data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>fit</strong> – Dictionary holding the fitted parameters.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.calibration.home_range.HomeRangeCalibrator.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>cmap='Set2'</em>, <em>figsize=(10</em>, <em>10)</em>, <em>ax=None</em>, <em>plotfit=True</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/home_range.html#HomeRangeCalibrator.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.home_range.HomeRangeCalibrator.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot graph of generated home range data and fit.</p>
+<p>Plots a graph of mean velocity versus
+resulting simulated home ranges. Adds a fitted line to the plot if
+desired to visually check calibration.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cmap</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Name of colormap to use for diferent niche sizes.</li>
+<li><strong>ax</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code>, optional) – Ax in which to draw the plot. If not given a new one will be
+created.</li>
+<li><strong>fisize</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">tuple</span></code>, optional) – Size of figure to create. Used only if no ax is given.</li>
+<li><strong>plotfit</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True will plot a line fitted to velocity data. Defaults to True.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>ax</strong> – Ax object for further plotting.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-ollin.calibration.occupancy"></span><dl class="class">
+<dt id="ollin.calibration.occupancy.OccupancyCalibrator">
+<em class="property">class </em><code class="descclassname">ollin.calibration.occupancy.</code><code class="descname">OccupancyCalibrator</code><span class="sig-paren">(</span><em>movement_model</em>, <em>config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/occupancy.html#OccupancyCalibrator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.occupancy.OccupancyCalibrator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class to calibrate Occupancy parameters.</p>
+<p>This class also holds all data generated in calibration simulations.</p>
+<dl class="attribute">
+<dt id="ollin.calibration.occupancy.OccupancyCalibrator.config">
+<code class="descname">config</code><a class="headerlink" href="#ollin.calibration.occupancy.OccupancyCalibrator.config" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code> – Dictionary holding all configuration settings. See <a class="reference internal" href="config.html#module-ollin.calibration.config" title="ollin.calibration.config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">config</span></code></a> to
+see all relevant settings.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.calibration.occupancy.OccupancyCalibrator.movement_model">
+<code class="descname">movement_model</code><a class="headerlink" href="#ollin.calibration.occupancy.OccupancyCalibrator.movement_model" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="../movement_models/movement models.html#ollin.movement_models.base.MovementModel" title="ollin.movement_models.base.MovementModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MovementModel</span></code></a> – Reference to Movement model instance being calibrated.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ollin.calibration.occupancy.OccupancyCalibrator.occupancy_info">
+<code class="descname">occupancy_info</code><a class="headerlink" href="#ollin.calibration.occupancy.OccupancyCalibrator.occupancy_info" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">array</span></code> –</p>
+<p>Numpy array of size:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">num_home_ranges</span><span class="p">,</span> <span class="n">num_niches</span><span class="p">,</span> <span class="n">num_nums</span><span class="p">,</span> <span class="n">num_worlds</span><span class="p">,</span> <span class="n">trials</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>containing occupancy information. Here:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Num_home_ranges:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Refers to the number of simulated home ranges held in the
+configuration array <code class="docutils literal notranslate"><span class="pre">config['home_ranges']</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Num_niches:</th><td class="field-body">Refers to the number of simulated niche sizes held in the
+configuration array <code class="docutils literal notranslate"><span class="pre">config['niche_sizes']</span></code>.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Num_nums:</th><td class="field-body">Refers to the number of different number of individuals
+simulated which are held in the configuration array
+<code class="docutils literal notranslate"><span class="pre">config['nums`]</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Num_worlds:</th><td class="field-body">Refers to the number of sites created per selection of
+<code class="docutils literal notranslate"><span class="pre">(home_range,</span> <span class="pre">niche_size)</span></code>.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Trials:</th><td class="field-body">Refers to the number of simulations made per site.</td>
+</tr>
+</tbody>
+</table>
+<p>Hence if:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">oc</span> <span class="o">=</span> <span class="n">occupancy_info</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>this means that <code class="docutils literal notranslate"><span class="pre">oc</span></code> was the occupancy generated by
+<code class="docutils literal notranslate"><span class="pre">config['nums'][k]</span></code> individuals, randomly selected from the
+the m-th simulation at the l-th world generated with niche size
+<code class="docutils literal notranslate"><span class="pre">config['niche_sizes'][j]</span></code> and home range
+<code class="docutils literal notranslate"><span class="pre">config['home_ranges'][k]</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.calibration.occupancy.OccupancyCalibrator.calculate_oc_info">
+<code class="descname">calculate_oc_info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/occupancy.html#OccupancyCalibrator.calculate_oc_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.occupancy.OccupancyCalibrator.calculate_oc_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate multiple scenarios in parallel and record occupancy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.calibration.occupancy.OccupancyCalibrator.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/occupancy.html#OccupancyCalibrator.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.occupancy.OccupancyCalibrator.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit model parameters to simulated occupancy data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>fit</strong> – Dictionary holding the fitted parameters.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ollin.calibration.occupancy.OccupancyCalibrator.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>figsize=(10</em>, <em>10)</em>, <em>ax=None</em>, <em>x_var='density'</em>, <em>w_target=True</em>, <em>xscale=None</em>, <em>yscale=None</em>, <em>lwidth=0.1</em>, <em>wtext=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ollin/calibration/occupancy.html#OccupancyCalibrator.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ollin.calibration.occupancy.OccupancyCalibrator.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot graph of generated occupancy data and fit.</p>
+<p>Plots a grid of graphs of the relation between population density
+and resulting simulated occupancy. Adds a fitted line to the plot if
+desired to visually check calibration.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ax</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code>, optional) – Ax in which to draw the plot. If not given a new one will be
+created.</li>
+<li><strong>fisize</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">tuple</span></code>, optional) – Size of figure to create. Used only if no ax is given.</li>
+<li><strong>x_var</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Variable to use in the x-axis. Options are: ‘density’,
+‘home_range’, ‘niche_sizes’. Defaults to ‘density’.</li>
+<li><strong>w_target</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – If True will plot a line fitted to velocity data. Defaults to True.</li>
+<li><strong>xscale</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Scale to use in the x-axis. Options are: ‘linear’, ‘log’. Defaults
+to ‘linear’.</li>
+<li><strong>yscale</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Scale to use in the y-axis. Options are: ‘linear’, ‘log’, ‘logit’.
+Defaults to ‘linear’.</li>
+<li><strong>lwidth</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Width of fitted line. Defaults to 0.1.</li>
+<li><strong>wtext</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – If True will add a text description to each plot, specifying the
+niche size and home_range.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>ax</strong> – Ax object for further plotting.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/ollin.jpg" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">ollin</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation/main.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/main.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute/main.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../libraries/main.html">Model Libraries</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core/core.html">Core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_models/movement models.html">Movement Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../movement_analyzers/movement_analyzers.html">Movement Analyzers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../estimation/main.html">Estimation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="calibration.html">Calibration</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+  <li><a href="calibration.html">Calibration</a><ul>
+      <li>Previous: <a href="calibrate.html" title="previous chapter">Calibration of Movement Models</a></li>
+      <li>Next: <a href="config.html" title="next chapter">Calibration Configuration</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, CONABIO, Santiago Martínez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../../_sources/api/calibration/calibrators.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
